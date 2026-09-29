@@ -1,6 +1,6 @@
 // OPTIONAL companion for Jeremy_Workouts.html. Only used if you host both files together (e.g. GitHub Pages/Netlify).
 // Caches the app so the Home Screen icon opens even with no signal. The app works without this file too.
-const CACHE = 'jw-v2';
+const CACHE = 'jw-v3';
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./index.html']))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch', e => {

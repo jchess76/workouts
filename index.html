@@ -175,6 +175,25 @@ nav.tabs .dot{position:absolute;top:10px;right:calc(50% - 20px);width:9px;height
 .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
 .seg button{flex:1;height:40px;border-radius:10px;font-weight:700;color:var(--muted)}
 .seg button.on{background:var(--card2);color:var(--text)}
+/* training mode: accent + label so the mode is obvious */
+body[data-mode="bjj"]{--accent:#22c55e;--accentbg:rgba(34,197,94,.14);--accentline:rgba(34,197,94,.45)}
+body[data-mode="strength"]{--accent:#a78bfa;--accentbg:rgba(167,139,250,.16);--accentline:rgba(167,139,250,.5)}
+.modetag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;border:1px solid}
+.modetag.m-bjj{color:#22c55e;background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.45)}
+.modetag.m-strength{color:#a78bfa;background:rgba(167,139,250,.16);border-color:rgba(167,139,250,.5)}
+.modetag.sm{font-size:10px;padding:1px 6px;text-transform:none}
+.modeseg button.on.m-bjj{background:rgba(34,197,94,.18);color:#22c55e;box-shadow:inset 0 0 0 1px rgba(34,197,94,.5)}
+.modeseg button.on.m-strength{background:rgba(167,139,250,.2);color:#c4b5fd;box-shadow:inset 0 0 0 1px rgba(167,139,250,.55)}
+.hero.m-strength{background:linear-gradient(145deg,#2a2145,#18142a 60%,#141220);border-color:rgba(167,139,250,.5)}
+.hero.m-strength .daytag{background:#a78bfa;color:#1a1033}
+.acc{color:var(--accent,var(--green))}
+.wo-head.m-strength{border-bottom:2px solid rgba(167,139,250,.6)} .wo-head.m-bjj{border-bottom:2px solid rgba(34,197,94,.5)}
+.daydesc{color:#b7d9c4} body[data-mode="strength"] .daydesc{color:#cfc5f5}
+.matnote{color:#b7d9c4;margin-top:6px}
+.warmup{margin:0 0 12px;padding:9px 12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted)}
+.hero li.bikeline{border-top:1px dashed rgba(255,255,255,.18);color:#bfe8cf}
+.card.bikefinish{border-color:rgba(96,165,250,.45)} .card.bikefinish.done{border-color:rgba(34,197,94,.45)}
+.bikesugg{font-size:17px;font-weight:800;margin-top:2px}
 table.t{width:100%;border-collapse:collapse;font-size:14px}
 table.t th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:right;padding:6px 4px;font-weight:700}
 table.t th:first-child,table.t td:first-child{text-align:left}
@@ -211,84 +230,98 @@ table.t tr.sel td{background:var(--greenbg)}
 const KEY = 'jeremyWorkouts.v1';
 const YT = id => 'https://www.youtube.com/watch?v=' + id;
 const DAYS = {
-  A: {name:{strength:'Push', bjj:'Push & Frame'}, bjj:'Pressing strength to frame, create space, and push off from bottom side control and mount.'},
-  B: {name:{strength:'Pull', bjj:'Pull & Grip'}, bjj:'Pulling power and gi-grip endurance for collar and sleeve grips, closed guard, and breaking posture.'},
-  C: {name:{strength:'Upper & Carries', bjj:'Rotational Core & Carries'}, bjj:'Anti-rotation trunk strength for hip escapes, scrambles, and staying square under pressure, plus pinch and carry grip.'},
-  D: {name:{strength:'Legs', bjj:'Legs'}, bjj:'Hip and leg strength for guard retention, passing, and takedown defense, once your PT clears you.'},
-  M: {name:{strength:'Mobility & Flexibility', bjj:'Mobility & Flexibility'}, bjj:'Open hips for guard, free up the upper back and shoulders for framing, and keep wrists healthy for grips.', section:true},
-  K: {name:{strength:'Balance & Core', bjj:'Balance & Core'}, bjj:'Base, posting, hip-escape power, guard retention, and sprawl for BJJ and wrestling.', section:true}
+  A: {name:{strength:'Push', bjj:'Push & Frame'}, desc:{strength:'Chest, shoulders, and triceps: main press, then classic hypertrophy accessories and rotator cuff work.', bjj:'Pressing strength to frame, create space, and push off from bottom side control and mount.'}},
+  B: {name:{strength:'Pull', bjj:'Pull & Grip'}, desc:{strength:'Back and biceps: main pulldown, rows and arm work for size and strength, plus face pulls for shoulder health.', bjj:'Pulling power and gi-grip endurance for collar and sleeve grips, closed guard, and breaking posture.'}},
+  C: {name:{strength:'Upper & Arms', bjj:'Rotational Core & Carries'}, desc:{strength:'Upper-body volume day: rows, a neutral-grip press, rear delts, and curls, plus cuff and upper-back health.', bjj:'Anti-rotation trunk strength for hip escapes, scrambles, and staying square under pressure, plus pinch and carry grip.'}},
+  D: {name:{strength:'Legs', bjj:'Legs'}, desc:{strength:'Leg strength rebuilt gradually, only once your PT clears you.', bjj:'Hip and leg strength for guard retention, passing, and takedown defense, once your PT clears you.'}},
+  M: {name:{strength:'Mobility & Flexibility', bjj:'Mobility & Flexibility'}, desc:{strength:'Keep hips, upper back, shoulders, and wrists moving well for pain-free lifting.', bjj:'Open hips for guard, free up the upper back and shoulders for framing, and keep wrists healthy for grips.'}, section:true},
+  K: {name:{strength:'Balance & Core', bjj:'Balance & Core'}, desc:{strength:'Trunk stability and balance that carry over to every lift.', bjj:'Base, posting, hip-escape power, guard retention, and sprawl for BJJ and wrestling.'}, section:true}
 };
 const MODES = {strength:'Strength', bjj:'BJJ / Grappling'};
+/* Bump PROGRAM_VERSION whenever DEFAULT_EXERCISES changes: phones that saved an older list get the new defaults on next load
+   (custom exercises, edited increments, and all history are kept). RETIRED_IDS = old default ids that are no longer in the program. */
+const PROGRAM_VERSION = 2;
+const RETIRED_IDS = ['shoulder_press','cuban_press','m_frog','k_birddog','k_bear'];
 /* Fields: day, mode ('both'|'strength'|'bjj'), main (main lift, first, 4x6-8), inc (lb step), startW (conservative first weight),
    bw (bodyweight/band: reps or seconds only), timed (seconds), secStep (+s per session while building), side (per arm/leg/side),
-   joint (tagged "Joint health"), needs:'neck' (hidden until surgeon clears neck isometrics), help (how it helps grappling), caution. */
+   joint (tagged "Joint health"), needs:'neck' (hidden until surgeon clears neck isometrics), help (mat note: how it helps grappling; shown in BJJ mode), caution. */
 const E = (id, day, mode, name, sets, repMin, repMax, o={}) => Object.assign({id, day, mode, name, sets, repMin, repMax, inc:0, startW:0}, o);
 const V = (id, title, chan) => ({video:YT(id), vtitle:title, vchan:chan});
 const NECK = 'Neck neutral: chin slightly tucked, no craning or jutting';
 const DEFAULT_EXERCISES = [
-  /* ================= DAY A · PUSH ================= */
-  E('chest_press','A','both','Chest press machine or DB bench',4,6,8,{main:true, inc:5, startW:50, ...V('xUm0BiZCWlQ','How To: Chest Press (Cybex)','ScottHermanFitness'),
+  /* ================= DAY A · PUSH (Strength) / PUSH & FRAME (BJJ) ================= */
+  E('chest_press','A','both','Chest press machine or DB bench',4,6,8,{main:true, inc:5, startW:50, help:'Frames: the pushing strength that keeps side control and mount off your chest', ...V('xUm0BiZCWlQ','How To: Chest Press (Cybex)','ScottHermanFitness'),
     cues:['Seat height: handles line up with mid-chest','Head back on the pad, chin neutral (no jutting forward)','Shoulder blades down and back, wrists straight','Exhale as you press; stop just short of hard lockout','DB option: feet planted, head stays on the bench, and don’t crane your neck to sit up']}),
   E('incline_db','A','strength','Incline DB press',3,8,10,{inc:5, startW:20, ...V('0f6-uCUKqgA','Incline Dumbbell Press BETTER | Targeting The Muscle Series','Renaissance Periodization'),
     cues:['Low incline (15-30°)','Head supported on the bench, neck relaxed','Elbows about 45° from your sides; lower to upper chest','Get the DBs up from your thighs; don’t crane your neck to sit up']}),
+  E('pec_fly','A','strength','Pec deck or cable fly',3,10,12,{inc:2.5, startW:40, ...V('3jYo5cMU3d4','The Chest PEC DEC FLY | Exercise Form Guide','Max Euceda'),
+    cues:['Slight bend in the elbows, fixed','Head against the pad, chin neutral','Don’t let your arms travel too far back','Squeeze for a second where the handles meet']}),
   E('lateral_raise','A','strength','Seated DB lateral raise (light)',3,10,12,{inc:2.5, startW:8, ...V('3zohLHTjFH0','How to Do Seated Laterals','LIVESTRONG'),
     cues:['Seated, light weight, slight bend in the elbows','Raise only to shoulder height','No shrugging: keep your shoulders away from your ears',NECK]}),
-  E('landmine_press','A','bjj','Landmine press (standing, light)',3,8,10,{inc:2.5, startW:25, side:true, ...V('_ArzG9qz-yM','HighPerformanceHandbook.com: Half-Kneeling 1-arm Landmine Press','Eric Cressey'),
-    cues:['Stand for now. Half-kneeling only once your knee is cleared for kneeling','Angled press (not straight overhead), so it’s neck-friendly','Ribs down, glutes tight, don’t lean back','Head neutral: press past your face, don’t tilt your head out of the way','Weight = load on the bar end. Reps are per arm']}),
-  E('floor_press','A','bjj','Single-arm DB floor press',3,8,10,{inc:2.5, startW:20, side:true, ...V('0S0pPgQXWNk','Single Arm Dumbbell Floor Press','Functional Bodybuilding'),
-    cues:['Lie on a mat, head resting down (thin pad if needed), neck relaxed','Upper arm touches the floor softly, then press','Brace so your body doesn’t roll toward the weight','Legs straight is fine to protect the knee','Weight is per hand. Reps are per arm']}),
-  E('pushdown','A','both','Cable triceps pushdown',3,10,12,{inc:2.5, startW:30, ...V('2-LAMcpzODU','How To: Tricep Pushdown (Life Fitness Cable)','ScottHermanFitness'),
+  E('landmine_press','A','bjj','Single-arm landmine press (standing)',3,8,10,{inc:2.5, startW:25, side:true, help:'Frames: the angled one-arm push you use to frame on the hip or neck and shrimp away', ...V('U6mT6uZkajk','Staggered Single Arm Landmine Press','E3 Rehab Exercise Library'),
+    cues:['Standing, staggered stance, both feet flat (no half-kneeling while the knee heals)','Angled press (not straight overhead), so it’s neck-friendly','Ribs down, glutes tight, don’t lean back or twist','Head neutral: press past your face, don’t tilt your head out of the way','Weight = load on the bar end. Reps are per arm']}),
+  E('floor_press','A','bjj','Single-arm DB press (bench or floor)',3,8,10,{inc:2.5, startW:20, side:true, help:'Bottom side control: pressing one arm while your trunk fights the roll', ...V('0S0pPgQXWNk','Single Arm Dumbbell Floor Press','Functional Bodybuilding'),
+    cues:['Flat bench is easiest to get on and off with the knee; floor is fine if getting up is easy','Head resting down, neck relaxed','Brace so your body doesn’t roll toward the weight','Legs straight is fine to protect the knee','Weight is per hand. Reps are per arm']}),
+  E('plate_squeeze','A','bjj','Plate squeeze press hold (Svend press)',3,20,30,{inc:2.5, startW:10, timed:true, secStep:5, help:'Clamping: the chest squeeze for closing elbows, framing, and holding a tight body lock', ...V('vNxezQEqy6I','Build a Bigger Chest with the Plate Pinch/Svend Press | Mark Bell','Bodybuilding.com'),
+    cues:['Standing tall, squeeze two smooth plates together between flat palms at chest height','Press them out until your arms are nearly straight, then HOLD while squeezing hard','Shoulders down, no shrug, chin neutral','Weight = total of both plates. Time is the hold']}),
+  E('pushdown','A','strength','Cable triceps pushdown',3,10,12,{inc:2.5, startW:30, ...V('2-LAMcpzODU','How To: Tricep Pushdown (Life Fitness Cable)','ScottHermanFitness'),
     cues:['Elbows pinned to your sides','Stand tall, chin slightly tucked','Don’t lean your head over the stack','Full extension, controlled return']}),
-  E('shoulder_taps','A','bjj','Plank shoulder taps',3,10,10,{bw:true, side:true, ...V('amA9sc6dmH0','Plank Shoulder Taps','Foundation Chiropractic + Physiotherapy'),
+  E('shoulder_taps','A','bjj','Plank shoulder taps',3,10,10,{bw:true, side:true, help:'Posting: a stable base on one hand while you frame or post with the other', ...V('amA9sc6dmH0','Plank Shoulder Taps','Foundation Chiropractic + Physiotherapy'),
     cues:['Hands under your shoulders; hands on a bench makes it easier','On your toes, not your knees, while the knee heals','Neck long: look at the floor slightly ahead','Feet wide, hips still, slow taps. Reps are per side']}),
-  E('ext_rot','A','both','Cable external rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, ...V('GxDF2AYsI1Q','Cable Shoulder External Rotation','Physio Plus Fitness'),
+  E('ext_rot','A','both','Cable external rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, help:'Shoulder armor for kimura and americana pressure; tap early anyway', ...V('GxDF2AYsI1Q','Cable Shoulder External Rotation','Physio Plus Fitness'),
     cues:['Cable at elbow height; rolled towel between your elbow and side','Rotate out slowly, keeping the elbow glued to the towel','Light! Rotator cuff work, not a strength test',NECK,'Reps are per arm']}),
-  E('wrist_curl','A','both','DB wrist curls',3,12,15,{joint:true, inc:2.5, startW:10, ...V('2wPpcJBe03o','Dumbbell Bench Wrist Curl','Renaissance Periodization'),
-    cues:['Forearms resting on a bench or your thighs, palms up','Let the DB roll to the fingers, then curl the wrist up','Slow, full range, no bouncing','Wrist strength for gi grips and posting']}),
-  E('rev_wrist_curl','A','both','DB reverse wrist curls',3,12,15,{joint:true, inc:2.5, startW:5, ...V('krZ6pWGZ8xo','How to Do Dumbbell Reverse Wrist Curls','LIVESTRONG'),
+  E('wrist_curl','A','strength','DB wrist curls',3,12,15,{joint:true, inc:2.5, startW:10, ...V('2wPpcJBe03o','Dumbbell Bench Wrist Curl','Renaissance Periodization'),
+    cues:['Forearms resting on a bench or your thighs, palms up','Let the DB roll to the fingers, then curl the wrist up','Slow, full range, no bouncing','Forearm strength for heavier pressing and pulling']}),
+  E('rev_wrist_curl','A','bjj','DB reverse wrist curls',3,12,15,{joint:true, inc:2.5, startW:5, help:'Elbow health: balances all the gripping so your elbows survive gi grips', ...V('krZ6pWGZ8xo','How to Do Dumbbell Reverse Wrist Curls','LIVESTRONG'),
     cues:['Palms down, forearms supported','Lift the back of the hand up, lower slowly','Light: wrist extensors tire fast','Balances all the gripping in jiu-jitsu (elbow health)']}),
-  /* ================= DAY B · PULL ================= */
-  E('lat_pulldown','B','both','Lat pulldown (or assisted pull-up)',4,6,8,{main:true, inc:5, startW:60, ...V('SALxEARiMkw','How to do Lat Pulldowns (AVOID MISTAKES!)','ATHLEAN-X™'),
+  /* ================= DAY B · PULL (Strength) / PULL & GRIP (BJJ) ================= */
+  E('lat_pulldown','B','both','Lat pulldown (or assisted pull-up)',4,6,8,{main:true, inc:5, startW:60, help:'Pulling: break posture in closed guard and pull opponents onto your frames', ...V('SALxEARiMkw','How to do Lat Pulldowns (AVOID MISTAKES!)','ATHLEAN-X™'),
     cues:['Pull to the upper chest, NEVER behind the neck','Chest up, slight lean back, chin neutral','Start by pulling the shoulder blades down, then drive the elbows down','Assisted pull-up option: step on and off carefully (knee), never jump or drop']}),
-  E('cs_row','B','both','Chest-supported row',3,8,10,{inc:5, startW:50, ...V('H75im9fAUMc','Chest-Supported Row','Men’s Health'),
+  E('cs_row','B','strength','Chest-supported row',3,8,10,{inc:5, startW:50, ...V('H75im9fAUMc','Chest-Supported Row','Men’s Health'),
     cues:['Chest on the pad; look at the pad, not up at the mirror','Squeeze the shoulder blades together at the top','No shrugging, no jerking']}),
-  E('db_curl','B','strength','DB or cable curls',3,10,12,{inc:2.5, startW:15, ...V('yTWO2th-RIY','Stop Doing Dumbbell Bicep Curls Like This!','ATHLEAN-X™'),
+  E('straight_arm_pd','B','strength','Straight-arm cable pulldown',3,10,12,{inc:2.5, startW:30, ...V('98W63pVdW38','How To: Straight Arm Pull Down (Cable Machine)','Fitness Lab'),
+    cues:['Stand tall with a slight hip hinge, arms long, elbows soft','Sweep the bar down to your thighs using your lats','Ribs down; don’t let your head drop or jut forward','Slow return until you feel the lats stretch']}),
+  E('db_curl','B','strength','DB curls',3,10,12,{inc:2.5, startW:15, ...V('yTWO2th-RIY','Stop Doing Dumbbell Bicep Curls Like This!','ATHLEAN-X™'),
     cues:['Elbows at your sides, no swinging','Shoulders down, don’t hunch','Squeeze at the top, lower in about 2 seconds']}),
-  E('towel_row','B','bjj','Towel / gi-grip cable row',3,8,10,{inc:5, startW:40, ...V('Ftzz4sa7NeI','Cable Row w/ towel grip','The BJJ Physio'),
+  E('towel_row','B','bjj','Towel / gi-grip cable row',3,8,10,{inc:5, startW:40, help:'Collar and sleeve grips: row while your hands hold a gi-style grip', ...V('Ftzz4sa7NeI','Cable Row w/ towel grip','The BJJ Physio'),
     cues:['Loop a towel or old gi lapel through the cable and squeeze it like a collar grip','Sit tall, neutral neck, no rocking','Pull elbows back, pause, and control the return','Stop the set when your grip fails, not your back']}),
-  E('hammer_curl','B','bjj','Hammer curls',3,10,12,{inc:2.5, startW:15, ...V('zC3nLlEvin4','How To: Dumbbell Hammer Curl','ScottHermanFitness'),
-    cues:['Neutral grip (thumbs up), like holding sleeve grips','Elbows still, shoulders down','Controlled, no swinging']}),
-  E('dead_hang','B','bjj','Dead hang with gi or towel (feet supported)',3,20,40,{bw:true, timed:true, secStep:5, ...V('bI9KZVdFSmQ','Why & How "Hanging" STOPS Shoulder Pain & Surgery','Bob & Brad'),
+  E('dead_hang','B','bjj','Towel / gi hang (feet supported)',3,20,40,{bw:true, timed:true, secStep:5, help:'Grip endurance: hold lapel and sleeve grips for a whole round', ...V('bI9KZVdFSmQ','Why & How "Hanging" STOPS Shoulder Pain & Surgery','Bob & Brad'),
     cues:['Drape a towel or gi over the pull-up bar and grip it like lapels','Keep your feet on a box or the floor (partial hang) to unload your spine and neck','Shoulders engaged, not shrugged up to your ears; head neutral','STEP down, never drop; protect the knees']}),
-  E('face_pull','B','both','Face pulls',3,15,15,{joint:true, inc:2.5, startW:20, ...V('ljgqer1ZpXg','STOP F*cking Up Face Pulls (PROPER FORM!)','ATHLEAN-X™'),
+  E('towel_iso_pull','B','bjj','Towel cable row iso hold',3,20,30,{inc:5, startW:30, timed:true, secStep:5, help:'Breaking posture: pull and HOLD like you’re keeping someone broken down in closed guard', ...V('DyrL0-nb5f8','Towel Seated Row ISO Hold','Sierra Human Performance'),
+    cues:['Seated cable row with a towel looped through; grip it like gi lapels','Row to your ribs, then hold with elbows back and chest tall','Neck neutral; don’t lean back to cheat','Weight = stack setting. Time is the hold']}),
+  E('hammer_curl','B','bjj','Hammer curls',3,10,12,{inc:2.5, startW:15, help:'Sleeve grips and arm control: neutral-grip elbow flexion', ...V('zC3nLlEvin4','How To: Dumbbell Hammer Curl','ScottHermanFitness'),
+    cues:['Neutral grip (thumbs up), like holding sleeve grips','Elbows still, shoulders down','Controlled, no swinging']}),
+  E('face_pull','B','both','Face pulls',3,15,15,{joint:true, inc:2.5, startW:20, help:'Posture: undoes the hunched guard position and protects the shoulders', ...V('ljgqer1ZpXg','STOP F*cking Up Face Pulls (PROPER FORM!)','ATHLEAN-X™'),
     cues:['Light weight, rope at about face height','Pull toward your eyes; hands finish behind the elbows (rotate out)','Head stays still, chin neutral','Pause and squeeze; slow return']}),
-  E('scap_pull','B','both','Scapular pull-ups (feet supported) or scap retractions',3,8,10,{joint:true, bw:true, ...V('d0DVd2V0n7A','Fix Your Pull Ups with Scapula Pull Ups | Tim Keeley | Physio REHAB','Physio REHAB'),
+  E('scap_pull','B','strength','Scapular pull-ups (feet supported) or scap retractions',3,8,10,{joint:true, bw:true, ...V('d0DVd2V0n7A','Fix Your Pull Ups with Scapula Pull Ups | Tim Keeley | Physio REHAB','Physio REHAB'),
     cues:['Arms straight: move ONLY the shoulder blades (down and back), then relax up','Keep your feet on a box (partial hang), or do it on the lat pulldown machine','Head neutral; don’t tuck or crane your chin',
       'Step down, never drop']}),
-  E('wrist_bucket','B','both','Rice bucket or plate wrist work',3,30,45,{joint:true, bw:true, timed:true, secStep:5, ...V('vvximWI1-JM','Hand & Wrist Strength & Durability - Rice or Sand Bucket','Catalyst Athletics'),
+  E('wrist_bucket','B','bjj','Rice bucket or plate wrist work',3,30,45,{joint:true, bw:true, timed:true, secStep:5, help:'Finger and wrist durability for gi grips', ...V('vvximWI1-JM','Hand & Wrist Strength & Durability - Rice or Sand Bucket','Catalyst Athletics'),
     cues:['Rice bucket: open/close, twist, and wrist curls inside the rice','No bucket? Pinch-grip plate wrist rotations or a wrist roller, light','Easy pace: joint durability, not max effort','Great for finger and wrist health from gi grips']}),
-  /* ================= DAY C · UPPER / CORE & CARRIES ================= */
-  E('sa_cable_row','C','both','Single-arm cable row',4,6,8,{main:true, inc:5, startW:25, side:true, ...V('_z5NMUxkxxw','Standing Single Arm Cable Row - The Proper Lift','BPI Sports'),
+  /* ================= DAY C · UPPER & ARMS (Strength) / ROTATIONAL CORE & CARRIES (BJJ) ================= */
+  E('sa_cable_row','C','both','Single-arm cable row',4,6,8,{main:true, inc:5, startW:25, side:true, help:'Pulling while resisting the twist, like pulling a sleeve while staying square', ...V('_z5NMUxkxxw','Standing Single Arm Cable Row - The Proper Lift','BPI Sports'),
     cues:['Staggered stance or seated, torso still (resist the twist)','Pull your elbow toward your hip','Head neutral; don’t twist through the neck','Reps are per arm']}),
-  E('pec_fly','C','strength','Pec deck or cable fly',3,10,12,{inc:2.5, startW:40, ...V('3jYo5cMU3d4','The Chest PEC DEC FLY | Exercise Form Guide','Max Euceda'),
-    cues:['Slight bend in the elbows, fixed','Head against the pad, chin neutral','Don’t let your arms travel too far back']}),
-  E('shoulder_press','C','strength','Machine shoulder press (neutral grip, light)',3,8,10,{inc:2.5, startW:30, caution:'Only with your surgeon’s OK. Skip if you have any neck symptoms.', ...V('Wqq43dKW1TU','How To: Overhead Press (Cybex)','ScottHermanFitness'),
-    cues:['Surgeon OK first; machine only, NEVER a barbell overhead','Neutral grip, light weight','Back and head against the pad, chin neutral','Stop short of any range that bothers your neck']}),
-  E('suitcase_carry','C','both','Suitcase carry or farmer’s hold',3,20,30,{inc:5, startW:25, timed:true, secStep:5, side:true, caution:'Walk only if your knee allows. Otherwise do a standing hold, or a seated grip hold.', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
-    cues:['Stand tall; don’t lean toward the weight','Shoulders level and down, with no shrug (important for the neck)','Short slow steps, or a standing hold; seated hold if your knee is sore','Weight is per hand. Time is per side']}),
-  E('pallof','C','bjj','Pallof press',3,10,10,{inc:2.5, startW:15, side:true, help:'Base: resist being turned and swept', ...V('otxypVv_0Es','How To Perform The Pallof Press Exercise For Less Lower Back Pain','Dr. Carl Baird'),
-    cues:['Stand side-on to the band or cable (no half-kneeling until your knee is cleared)','Press straight out and resist the twist','Ribs down, neck neutral, breathe','Reps are per side']}),
-  E('woodchop','C','bjj','Cable woodchop (high to low, light)',3,10,10,{inc:2.5, startW:15, side:true, ...V('jnG8cjO0fMQ','High to Low Cable Chop','ProForm Physical Therapy'),
+  E('neutral_db_press','C','strength','Neutral-grip DB bench press',3,8,10,{inc:5, startW:25, ...V('Oq5MMAbUE2o','Neutral Grip Dumbbell Bench Press | J2FIT | Mike','J2FIT Strength & Conditioning'),
+    cues:['Palms facing each other, elbows tucked about 30°','Head stays on the bench, chin neutral','Lower to the lower chest, press up without clanking the DBs','Get the DBs up from your thighs; don’t crane your neck to sit up']}),
+  E('rear_delt_fly','C','strength','Reverse pec deck (rear delt fly)',3,12,15,{inc:2.5, startW:30, ...V('rd13vNldjzo','How to use the Rear Delt Fly Machine','Gainzville Training Club'),
+    cues:['Chest on the pad, handles at shoulder height','Sweep the arms back with soft elbows; lead with the back of the hand','No shrugging; chin neutral','Pause, then return slowly']}),
+  E('cable_curl','C','strength','Cable curls',3,10,12,{inc:2.5, startW:30, ...V('NFzTWp2qpiE','How To Do Cable Bicep Curls - Full Video Tutorial and Step-by-Step Guide','Fit Father Project - Fitness For Busy Fathers'),
+    cues:['Stand tall, elbows pinned at your sides','Curl without leaning back','Squeeze at the top, lower in about 2 seconds',NECK]}),
+  E('woodchop','C','bjj','Cable woodchop (high to low, light)',3,10,10,{inc:2.5, startW:15, side:true, help:'Hip escapes and sweeps: rotate from the hips to create space', ...V('jnG8cjO0fMQ','High to Low Cable Chop','ProForm Physical Therapy'),
     cues:['Light, smooth, no yanking','Rotate through your hips and mid-back, arms long','Neck moves with your torso; don’t whip your head','Pivot the back foot so the knee doesn’t twist. Reps are per side']}),
-  E('plate_pinch','C','bjj','Plate pinch hold',3,20,30,{inc:2.5, startW:10, timed:true, secStep:5, ...V('jFTV3DQf3HE','How To Do Plate Pinches','PureGym'),
+  E('pallof','C','bjj','Pallof press (standing)',3,10,10,{inc:2.5, startW:15, side:true, help:'Base: resist being turned and swept', ...V('otxypVv_0Es','How To Perform The Pallof Press Exercise For Less Lower Back Pain','Dr. Carl Baird'),
+    cues:['Stand side-on to the band or cable, feet shoulder-width (no kneeling while the knee heals)','Press straight out and resist the twist','Ribs down, neck neutral, breathe','Reps are per side']}),
+  E('standing_lift','C','bjj','Split-stance cable lift (low to high, standing)',3,8,10,{inc:2.5, startW:10, side:true, help:'Posting and framing up from the bottom: diagonal core strength', ...V('XtvgguvEmk0','Split stance cable lift (low to high)','Prepare For Performance'),
+    cues:['Standing split stance, both feet flat (the standing version of the half-kneeling lift)','Pull the rope from low to high across your body, hips square','Eyes forward; neck moves with your torso','Reps are per side']}),
+  E('suitcase_carry','C','bjj','Suitcase carry or hold',3,20,30,{inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', caution:'Walk only if your knee allows. Otherwise do a standing hold, or a seated grip hold.', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
+    cues:['Stand tall; don’t lean toward the weight','Shoulders level and down, with no shrug (important for the neck)','Short slow steps, or a standing hold; seated hold if your knee is sore','Weight is per hand. Time is per side']}),
+  E('plate_pinch','C','bjj','Plate pinch hold',3,20,30,{inc:2.5, startW:10, timed:true, secStep:5, help:'Pinch grip for pant grips, wrist control, and hanging on to cross-face', ...V('jFTV3DQf3HE','How To Do Plate Pinches','PureGym'),
     cues:['Pinch smooth sides of plates, arms at your sides','Stand tall, shoulders down, no shrugging','Set it down with control, away from your feet','Weight is per hand']}),
-  E('int_rot','C','both','Cable internal rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, ...V('0TxfJCE8yqU','Cable Internal Rotation - HASfit Rotator Cuff Exercise Demonstration','HASfit'),
+  E('int_rot','C','both','Cable internal rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, help:'Balanced shoulders for framing and underhooks', ...V('0TxfJCE8yqU','Cable Internal Rotation - HASfit Rotator Cuff Exercise Demonstration','HASfit'),
     cues:['Cable at elbow height; towel between elbow and side','Rotate in toward your belly, slow on the way back','Light rotator cuff work',NECK,'Reps are per arm']}),
-  E('cuban_press','C','both','Cuban press (very light)',3,10,12,{joint:true, inc:2.5, startW:5, caution:'Very light, and only if there’s no neck strain. Skip if it bothers your neck.', ...V('67ewzBXws7M','The “Cuban Press” for scapular strength and stability! MoveU','MoveU'),
-    cues:['Very light DBs (or none)','Upright row ONLY to elbow height, then rotate up, press only as high as is comfortable','No shrugging; if you feel neck tension, stop at the rotation and skip the press',NECK]}),
-  E('pull_aparts','C','both','Band pull-aparts',3,15,15,{joint:true, bw:true, ...V('3OYSIWaJJk4','The Band Pull-Apart for a Stronger Back','Men’s Health'),
+  E('pull_aparts','C','strength','Band pull-aparts',3,15,15,{joint:true, bw:true, ...V('3OYSIWaJJk4','The Band Pull-Apart for a Stronger Back','Men’s Health'),
     cues:['Arms at chest height, slight bend in the elbows','Squeeze the shoulder blades back without shrugging','Chin neutral, ribs down, slow return']}),
-  E('neck_iso','C','both','Neck isometrics (surgeon clearance ONLY)',2,10,10,{joint:true, bw:true, timed:true, secStep:0, needs:'neck', caution:'Hidden until you turn on “Surgeon cleared neck isometrics” in Settings. Gentle pressure only.', ...V('WnKcq1Uh8m4','Isometric strengthening to your neck','Rehab My Patient'),
+  E('neck_iso','C','both','Neck isometrics (surgeon clearance ONLY)',2,10,10,{joint:true, bw:true, timed:true, secStep:0, needs:'neck', help:'Only with surgeon clearance: never a substitute for tapping early', caution:'Hidden until you turn on “Surgeon cleared neck isometrics” in Settings. Gentle pressure only.', ...V('WnKcq1Uh8m4','Isometric strengthening to your neck','Rehab My Patient'),
     cues:['ONLY with your surgeon’s explicit clearance','Hand against your forehead, then the back and sides of your head: push gently (about 20-30% effort), with NO movement','Breathe; hold about 10s per direction','Stop immediately with any pain, tingling, or arm symptoms']}),
   /* ================= DAY D · LEGS (locked) ================= */
   E('leg_press','D','both','Leg press (limited range)',4,8,8,{main:true, inc:5, startW:40, ...V('FNTd_mxtWmo','Proper Leg Press Form • Weight Lifting Exercises for Osteoporosis','Margaret Martin, Physical Therapist'),
@@ -314,14 +347,14 @@ const DEFAULT_EXERCISES = [
     cues:['Sit tall with both knees at 90°, switch slowly, then hold each side','Hands behind you for support is fine','Only as far as the operated knee is comfortable; skip if it pinches','Neck relaxed']}),
   E('m_pigeon','M','both','Pigeon stretch on a bench',2,30,45,{bw:true, timed:true, secStep:5, side:true, help:'Guard: external hip rotation for closed and open guard', ...V('BmVEn3LfHcg','PIGEON Stretch on Bench','Dr. Steve Sudell Jr.'),
     cues:['Front shin across a bench at hip height, back leg standing','Hinge forward with a long spine; gentle stretch in the glute','If the knee complains, use a seated figure-4 stretch instead','Head in line with your spine, no dropping']}),
-  E('m_frog','M','both','Frog stretch (or lying butterfly)',2,30,45,{bw:true, timed:true, secStep:5, help:'Guard & butterfly: adductor length for opening the hips', caution:'Kneeling position. Wait until your knees are cleared for kneeling. Until then, do a lying butterfly stretch.', ...V('6-JQqiI_Plo','Frog Stretch','Dr. James Chung - Sports Physical Therapist'),
-    cues:['Thick pads under the knees (only once kneeling is cleared)','Rock back gently; no bouncing','Forearms down, neck relaxed, looking at the floor','Alternative now: lie on your back, soles together, knees fall open']}),
+  E('m_butterfly','M','both','Lying butterfly stretch',2,30,45,{bw:true, timed:true, secStep:5, help:'Guard & butterfly: adductor length for opening the hips', ...V('KembcTr2olw','Supine Butterfly Stretch','ALTA Physical Therapy & Pilates'),
+    cues:['Lie on your back, soles of the feet together, knees fall open','Pillows or yoga blocks under the knees if the operated knee pulls','Let gravity do the work: no pushing the knees down','Head resting on the floor or a pillow, neck relaxed']}),
   E('m_ham','M','both','Hamstring stretch on a bench',2,30,45,{bw:true, timed:true, secStep:5, side:true, help:'Guard: hamstring length for high guard and inversions (later)', ...V('JVrbKWd7_vs','Bench Hamstring Stretch- (GetFitivity.com)','Guy Pistone'),
     cues:['Heel on a LOW bench, knee soft','Hinge from the hips with a flat back; don’t round your neck down','Gentle on the operated leg; follow your PT’s range','Time is per leg']}),
   E('m_openbook','M','both','Thoracic open books',2,30,45,{bw:true, timed:true, secStep:5, side:true, help:'Framing & rotation: mid-back mobility so the neck doesn’t have to move', ...V('YMswmjk7Qj4','Thoracic Rotation  Open Book','Momentum Physical Therapy'),
     cues:['Side-lying, head on a pillow or foam pad, knees stacked','Open the top arm slowly and let your eyes follow gently','Rotate through the mid-back. Never force your neck to turn','Slow reps for the whole time. Time is per side']}),
-  E('m_lat','M','both','Lat stretch (bench or standing on a rack)',2,30,45,{bw:true, timed:true, secStep:5, help:'Posting & framing: overhead shoulder mobility', ...V('6Fc0u9xPkL8','The Bench Stretch - The Ultimate Lat and Thoracic Spine Mobility Exercise','The Barbell Physio'),
-    cues:['The kneeling bench version is for once your knees are cleared; until then, stand and hold a rack or cable column, and sit your hips back','Let your head stay between your arms, relaxed','Breathe into your ribs, no forcing']}),
+  E('m_lat','M','both','Standing lat stretch (rack or cable column)',2,30,45,{bw:true, timed:true, secStep:5, help:'Posting & framing: overhead shoulder mobility', ...V('5HLQAVOvxNE','Doorway Lat Stretch','Catalyst Physical Therapy & Wellness'),
+    cues:['Standing version: hold a rack or cable column at about hip height, walk back, and sit your hips back (no kneeling)','Let your head stay between your arms, relaxed','Breathe into your ribs, no forcing']}),
   E('m_pec','M','both','Pec doorway stretch (rack or cable column)',2,30,45,{bw:true, timed:true, secStep:5, side:true, help:'Framing: opens the chest after all the pressing and hunched guard work', ...V('B9uY01NoqBg','Doorway Stretch','Baptist Health'),
     cues:['Forearm on the upright, elbow at shoulder height or lower','Step through gently until you feel a mild stretch','Chin neutral; don’t push your head forward','Time is per side']}),
   E('m_wrist','M','both','Wrist & forearm stretches',2,30,45,{bw:true, timed:true, secStep:5, help:'Grips & posting: wrist and finger health', ...V('ITVGNDiBur0','Stretches for Wrist Pain','Hybrid Calisthenics'),
@@ -335,24 +368,24 @@ const DEFAULT_EXERCISES = [
     cues:['Light, smooth','Rotate through your hips and mid-back','Neck moves with your torso','Pivot the back foot. Reps are per side']}),
   E('k_deadbug','K','both','Dead bug',3,8,8,{bw:true, side:true, help:'Guard retention: coordinate your hips and shoulders over a stable trunk', ...V('GbSC02oU3To','How to Do a Dead Bug: A Guide from Physical Therapists','Hinge Health'),
     cues:['Head stays down on the floor, neck relaxed','Low back gently pressed down; exhale as you reach','Bend the knee as needed. Reps are per side']}),
-  E('k_birddog','K','both','Bird dog',3,8,8,{bw:true, side:true, help:'Posting & base on all fours (turtle, referee position)', caution:'Kneeling position. Pad the knees, and wait if kneeling isn’t cleared yet (do dead bugs instead).', ...V('xEDnlOxeJH4','How to Do the Bird Dog Exercise: A Guide from Physical Therapists','Hinge Health'),
-    cues:['Hands under shoulders, knees under hips (on a pad)','Reach the opposite arm and leg long; don’t arch','Neck in line: look at the floor, not up','Reps are per side']}),
+  E('k_plank_reach','K','both','Hands-elevated plank with arm reach',3,8,8,{bw:true, side:true, help:'Posting & base: stay stable on one hand, like posting in turtle or referee position', ...V('r-7_TWel2lI','Plank With Single Arm Reach','ProForm Physical Therapy'),
+    cues:['Hands on a bench or box, on your toes (never on your knees for now)','Reach one arm forward slowly without letting the hips rotate','Neck in line: look at the bench, not up','Reps are per side']}),
   E('k_sideplank','K','both','Side plank with hip dips',3,8,8,{bw:true, side:true, help:'Hip escape (shrimp) power', ...V('BWQRVB4LyFI','How to do Side Plank Hip Dips','Joanna Soh'),
     cues:['Elbow under your shoulder, body in a straight line','Head in line with your spine; don’t let it drop or crane','From the feet (or a bench-elevated elbow for easier). Bent-knee version only if the knee tolerates it','Reps are per side']}),
   E('k_stirpot','K','both','Stability ball stir-the-pot',3,20,30,{bw:true, timed:true, secStep:5, help:'Sprawl & top pressure: a stiff core over a moving base', ...V('IfOtFv6zz8I','Stability Ball Stir the Pot','Theory of Motion Exercise Library'),
     cues:['Forearms on the ball, from your toes (not your knees for now)','Small slow circles; hips stay still','Neck neutral: look at the ball, don’t crane up']}),
-  E('k_hklift','K','both','Half-kneeling cable lift (split stance for now)',3,8,8,{inc:2.5, startW:10, side:true, help:'Posting & framing up from the bottom: diagonal core strength', ...V('XdiqOcV7dpM','Half Kneeling Lift','Advanced Therapy and Performance'),
-    cues:['Standing split stance until kneeling is cleared','Pull the rope low to high across your body, hips square','Eyes forward; neck moves with your torso','Reps are per side']}),
+  E('k_hklift','K','both','Split-stance cable lift (standing)',3,8,8,{inc:2.5, startW:10, side:true, help:'Posting & framing up from the bottom: diagonal core strength', ...V('XtvgguvEmk0','Split stance cable lift (low to high)','Prepare For Performance'),
+    cues:['Standing split stance, both feet flat: the standing version of the half-kneeling lift','Pull the rope low to high across your body, hips square','Eyes forward; neck moves with your torso','Reps are per side']}),
   E('k_suitcase','K','both','Suitcase hold',3,20,30,{inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
     cues:['Stand tall, weight at your side, don’t lean','Shoulders level, no shrug','Standing hold (walk only if your knee allows). Time is per side']}),
-  E('k_bear','K','both','Bear crawl hold',3,20,30,{bw:true, timed:true, secStep:5, help:'Sprawl & top pressure; shoulder stability for posting', caution:'Knees bend and hover under load. Only once your knee is cleared. Until then, do a high plank hold.', ...V('s4K8Kbc219s','Bear Crawl Hold','Advanced Therapy and Performance'),
-    cues:['Hands under shoulders, knees hover an inch off the floor','Flat back, neck neutral (look at the floor)','Breathe; stop if the knee complains']}),
+  E('k_highplank','K','both','High plank hold (hands on a bench if needed)',3,20,30,{bw:true, timed:true, secStep:5, help:'Sprawl & top pressure; shoulder stability for posting', ...V('EKZfeoVuPbE','The High Plank | Plank Progressions','Dr. Carl Baird'),
+    cues:['Hands under shoulders, on your toes (not your knees for now); hands on a bench makes it easier','Squeeze glutes, ribs down, flat back','Neck neutral: look at the floor just ahead of your hands','Breathe; stop if the knee or neck complains']}),
   E('k_slpad','K','both','Single-leg stance on a pad',3,30,30,{bw:true, timed:true, secStep:0, side:true, help:'Base for takedown defense and wrestling', caution:'Only when your knee is cleared. Before that, do seated balance on a stability ball or stand holding a rack.', ...V('UcT6Pk42Jtw','Single Leg Balance on Foam Pad','OrthoIndy'),
     cues:['Next to a rack for safety','Soft knee, hips level, tall posture','Time is per leg']})
 ];
 
 function freshState(){
-  return {v:1, settings:{startDate:null, units:'lb', restDefault:90, ptCleared:false, bikeStartRes:2, mode:'bjj', neckIsoCleared:false},
+  return {v:1, programVersion:PROGRAM_VERSION, settings:{startDate:null, units:'lb', restDefault:90, ptCleared:false, bikeStartRes:2, mode:'bjj', neckIsoCleared:false},
           exercises: JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), sessions:[], bike:[], current:null};
 }
 function load(){
@@ -360,9 +393,25 @@ function load(){
     const s = JSON.parse(raw); const f = freshState();
     s.settings = Object.assign(f.settings, s.settings||{});
     s.exercises = Array.isArray(s.exercises) ? s.exercises : f.exercises;
+    if((+s.programVersion||1) < PROGRAM_VERSION){ s.exercises = migrateExercises(s.exercises); s.programVersion = PROGRAM_VERSION; }
     s.sessions = s.sessions||[]; s.bike = s.bike||[]; if(s.current===undefined) s.current=null;
     return s;
   }catch(e){ console.error(e); return freshState(); }
+}
+/* Program upgrade: a phone keeps its exercise list in localStorage, so without this a program update would never reach it
+   (and lists saved before modes existed had no mode tags, so both modes showed the same exercises). New defaults replace old ones;
+   custom exercises and edited increments are kept; history is keyed by exercise id and never touched. */
+function migrateExercises(old){
+  const defIds = new Set(DEFAULT_EXERCISES.map(e => e.id));
+  const oldById = new Map(old.filter(e => e && e.id).map(e => [e.id, e]));
+  const out = DEFAULT_EXERCISES.map(d => { const n = JSON.parse(JSON.stringify(d)); const o = oldById.get(d.id);
+    if(o && o.inc != null && !isNaN(+o.inc)) n.inc = +o.inc; return n; });
+  for(const e of old){
+    if(!e || !e.id || defIds.has(e.id) || RETIRED_IDS.includes(e.id)) continue;   // custom exercise: keep it, at the end of its day
+    let at = -1; out.forEach((x, k) => { if(x.day === e.day) at = k; });
+    out.splice(at < 0 ? out.length : at + 1, 0, Object.assign({mode:'both'}, e));
+  }
+  return out;
 }
 let S = load();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast('Could not save (storage full?)'); } }
@@ -505,10 +554,16 @@ function nextDay(){
   if(!abc.length) return 'A';
   const last = abc[abc.length-1].day; return {A:'B', B:'C', C:'A'}[last];
 }
-function modeOK(e){ return !e.mode || e.mode==='both' || e.mode===(S.settings.mode||'bjj'); }
+const curMode = () => (S.settings.mode === 'strength' ? 'strength' : 'bjj');
+function modeOK(e, m){ m = m || curMode(); return !e.mode || e.mode==='both' || e.mode===m; }
 function gateOK(e){ return e.needs!=='neck' || S.settings.neckIsoCleared; }
-function exercisesForDay(d, all){ return S.exercises.filter(e => e.day === d && (all || (modeOK(e) && gateOK(e)))); }
-function dayName(d){ const x = DAYS[d]; if(!x) return d; return x.name[S.settings.mode||'bjj'] || x.name.bjj; }
+function exercisesForDay(d, all, m){ return S.exercises.filter(e => e.day === d && (all || (modeOK(e, m) && gateOK(e)))); }
+function dayName(d, m){ const x = DAYS[d]; if(!x) return d; return x.name[m || curMode()] || x.name.bjj; }
+function dayDesc(d, m){ const x = DAYS[d]; if(!x) return ''; return (x.desc && (x.desc[m || curMode()] || x.desc.bjj)) || x.bjj || ''; }
+const isLiftDay = d => 'ABCD'.includes(d) && !!d;
+/* Bike finisher text from the existing bike ramp, e.g. "12 min easy spin, low resistance (level 2)" */
+function bikeFinishText(bs){ bs = bs || bikeSuggest(); return `${bs.min} min easy spin, ${bs.res <= 3 ? 'low resistance' : 'moderate resistance'} (level ${bs.res})`; }
+function logBikeRide(min, res, knee, notes){ const r = {id:uid(), date:todayISO(), t:new Date().toISOString(), min:+min, res:+res, rpm:null, knee:+knee||0, notes:notes||''}; S.bike.push(r); return r; }
 function dayFull(d){ return DAYS[d]?.section ? dayName(d) : 'Day '+d+' · '+dayName(d)+(d==='D'?' (PT clearance)':''); }
 
 /* ---------- bike suggestion ---------- */
@@ -551,6 +606,10 @@ let recURL = null, recFile = null;
 function go(v){ view = v; render(); window.scrollTo(0,0); }
 function toast(msg, ms=2200){ const t = document.createElement('div'); t.className='toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
 function curWeek(){ return weekOf(todayISO()); }
+const MODE_ICON = {strength:'🏋️', bjj:'🥋'};
+function modeSeg(){ const m = curMode(); return `<div class="seg modeseg" role="tablist" aria-label="Training mode">${Object.entries(MODES).map(([k,v])=>`<button class="${m===k?'on':''} m-${k}" data-a="mode" data-m="${k}" role="tab" aria-selected="${m===k}">${MODE_ICON[k]} ${v}</button>`).join('')}</div>`; }
+function modeTag(m){ m = m || curMode(); return `<span class="modetag m-${m}" data-mode="${m}">${MODE_ICON[m]} ${m==='strength'?'Strength mode':'BJJ / Grappling mode'}</span>`; }
+function descLine(d, cls, style){ const m = curMode(); return `<div class="${cls||'small'} daydesc" style="${style||''}">${MODE_ICON[m]} ${esc(dayDesc(d))}</div>`; }
 
 /* ---------- audio / haptics ---------- */
 let actx = null;
@@ -563,6 +622,7 @@ async function keepAwake(on){ try{ if(on && 'wakeLock' in navigator && !wakeLock
 function render(){
   const app = $('#app');
   const views = {home:vHome, workout:vWorkout, bike:vBike, progress:vProgress, settings:vSettings, safety:vSafety, program:vProgram};
+  document.body.dataset.mode = curMode();
   app.innerHTML = (views[view]||vHome)();
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === ((view==='safety'||view==='program')?'home':view)));
   $('#wo-dot').classList.toggle('hidden', !S.current);
@@ -588,7 +648,8 @@ function suggLine(ex, w){
 function vHome(){
   const w = curWeek(); const nd = nextDay(); const cleared = S.settings.ptCleared;
   const today = new Date();
-  const exs = exercisesForDay(S.current ? S.current.day : nd);
+  const c = S.current;
+  const exs = c ? c.items.filter(it => (exById(it.exId)?.day || c.day) === c.day).map(it => exById(it.exId)).filter(Boolean) : exercisesForDay(nd);
   const thisWeekSessions = S.sessions.filter(s => weekOf(s.date) === w).length;
   const bikeMin = S.bike.filter(b => weekOf(b.date) === w).reduce((a,b)=>a+(+b.min||0),0);
   const bs = bikeSuggest();
@@ -597,18 +658,21 @@ function vHome(){
   return `
   <header class="top"><div><h1>Hey Jeremy</h1><div class="sub">${today.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})} · Week ${w}</div></div>
     <button class="iconbtn" data-a="go" data-v="safety" aria-label="Safety">${ICONS.shield}</button></header>
-  <div class="seg" role="tablist" aria-label="Training mode">${Object.entries(MODES).map(([k,v])=>`<button class="${(S.settings.mode||'bjj')===k?'on':''}" data-a="mode" data-m="${k}">${k==='bjj'?'🥋 ':'🏋️ '}${v}</button>`).join('')}</div>
+  ${modeSeg()}
   ${weekBanners(w)}
-  <div class="hero">
+  <div class="hero m-${curMode()}" id="hero">
+    <div style="margin-bottom:10px">${modeTag()}</div>
     <div class="row"><div class="daytag">${heroDay}</div><div class="grow"><div class="small muted">${S.current?'Workout in progress':'Today’s suggested workout'}</div><h2>${esc(dayName(heroDay))}</h2></div></div>
-    <div class="small" style="margin-top:10px;color:#b7d9c4">🥋 ${esc(DAYS[heroDay].bjj)}</div>
-    <ul>${exs.map(e=>`<li><span>${e.main?'<b style="color:var(--green)">★</b> ':''}${esc(e.name)}</span><span class="muted" style="white-space:nowrap;padding-left:8px">${suggLine(e,w)}</span></li>`).join('') || '<li class="muted">No exercises for this day yet. Add some in Settings.</li>'}</ul>
+    ${descLine(heroDay, 'small', 'margin-top:10px')}
+    <ul>${exs.map(e=>`<li><span>${e.main?'<b class="acc">★</b> ':''}${esc(e.name)}</span><span class="muted" style="white-space:nowrap;padding-left:8px">${suggLine(e,w)}</span></li>`).join('') || '<li class="muted">No exercises for this day yet. Add some in Settings.</li>'}
+      ${isLiftDay(heroDay) ? `<li class="bikeline"><span>🚴 Finish with the bike</span><span class="muted" style="white-space:nowrap;padding-left:8px">${bs.min} min · level ${bs.res}</span></li>` : ''}</ul>
     ${S.current ? `<button class="btn primary" data-a="go" data-v="workout">Resume workout ›</button>` : `<button class="btn primary" data-a="start" data-day="${nd}" id="startBtn">Start Day ${nd} ›</button>`}
   </div>
   ${S.current ? '' : `<div class="card"><h3>Or pick a day</h3><div class="chips">
     ${['A','B','C'].map(d=>`<button class="chip ${d===nd?'on':''}" data-a="start" data-day="${d}">${d} · ${esc(dayName(d))}</button>`).join('')}
     ${cleared ? `<button class="chip" data-a="start" data-day="D">D · Legs</button>` : ''}</div>
-    <div class="tiny dim" style="margin-top:8px">Rotation is A → B → C on nonconsecutive days. Bike or rest in between, and plan around jiu-jitsu.</div></div>`}
+    <div class="tiny dim" style="margin-top:8px">Rotation is A → B → C on nonconsecutive days. Bike or rest in between, and plan around jiu-jitsu.</div>
+    <div class="tiny" style="margin-top:6px;color:#b7d9c4" id="bjjDayNote">🥋 Jiu-jitsu day: the bike is optional, a few easy minutes as a knee warm-up.</div></div>`}
   ${['M','K'].map(sectionCard).join('')}
   <div class="card ${cleared?'':'locked-card'}">
     <div class="row between"><div class="grow"><h2>${cleared?'🦵':'🔒'} Day D · Legs</h2>
@@ -622,13 +686,13 @@ function vHome(){
     <div class="stat"><div class="v">${bikeMin}</div><div class="l">Bike min wk</div></div><div class="stat"><div class="v">${S.sessions.length}</div><div class="l">Total</div></div></div>
   <div class="card"><div class="row between"><div><h3>Next bike</h3><div style="font-size:20px;font-weight:800">${bs.min} min · level ${bs.res}</div></div><button class="btn sm" data-a="go" data-v="bike">Log ride</button></div>
     <div class="small muted" style="margin-top:6px">${esc(bs.reason)}</div></div>
-  ${last ? `<div class="card"><h3>Last workout</h3><div class="row"><div class="daybadge">${last.day}</div><div class="grow"><b>${esc(dayName(last.day))}</b><div class="small muted">${fmtDate(last.date)} · ${last.items.length} exercises</div></div></div></div>` : ''}
+  ${last ? `<div class="card"><h3>Last workout</h3><div class="row"><div class="daybadge">${last.day}</div><div class="grow"><b>${esc(dayName(last.day, last.mode))}</b><div class="small muted">${fmtDate(last.date)} · ${last.items.length} exercises${last.mode?' · '+MODE_ICON[last.mode]+' '+esc(MODES[last.mode]):''}</div></div></div></div>` : ''}
   <button class="card row" style="width:100%;text-align:left" data-a="go" data-v="safety"><span style="font-size:22px">🛡️</span><div class="grow"><b>Safety & about</b><div class="small muted">Clearance, stop-on-pain, neck and knee precautions</div></div><span class="muted">›</span></button>`;
 }
 
 function sectionCard(d){
   const exs = exercisesForDay(d); const inWo = S.current && S.current.items.some(it=>exById(it.exId)?.day===d);
-  return `<div class="card"><div class="row"><div class="daybadge">${d==='M'?'🧘':'⚖️'}</div><div class="grow"><b>${esc(dayName(d))}</b><div class="small" style="color:#b7d9c4">🥋 ${esc(DAYS[d].bjj)}</div></div></div>
+  return `<div class="card"><div class="row"><div class="daybadge">${d==='M'?'🧘':'⚖️'}</div><div class="grow"><b>${esc(dayName(d))}</b>${descLine(d)}</div></div>
     <div class="tiny dim" style="margin:8px 0">${exs.map(e=>esc(e.name)).join(' · ')}</div>
     ${d==='M'?'<div class="tiny" style="color:var(--amber);margin-bottom:8px">Neck: gentle, pain-free range of motion only. Never force-stretch a fused neck.</div>':''}
     <div class="btns">${S.current ? `<button class="btn sm" data-a="addon" data-day="${d}" ${inWo?'disabled':''}>${inWo?'✓ Added to workout':'+ Add to current workout'}</button>` : `<button class="btn sm" data-a="start" data-day="${d}">Start ${d==='M'?'mobility':'balance & core'} session</button>`}</div></div>`;
@@ -640,8 +704,32 @@ function startWorkout(day){
   if(S.current && !confirm('A workout is already in progress. Discard it and start Day '+day+'?')) return;
   const w = curWeek();
   const items = exercisesForDay(day).map(ex => makeItem(ex, w));
-  S.current = {id:uid(), day, week:w, deload:isDeload(w), date:todayISO(), startedAt:new Date().toISOString(), rest:+S.settings.restDefault||90, restEnd:null, items};
+  S.current = {id:uid(), day, mode:curMode(), week:w, deload:isDeload(w), date:todayISO(), startedAt:new Date().toISOString(), rest:+S.settings.restDefault||90, restEnd:null, items};
   save(); keepAwake(true); go('workout');
+}
+/* Mode switch. If a lifting workout is in progress, re-plan it for the new mode: exercises you haven't touched are swapped,
+   anything you've already logged (checked a set, rated feel/pain, or wrote notes) stays, and add-ons are untouched. */
+function itemTouched(it){ return it.sets.some(x => x.done) || !!it.feel || +it.pain > 0 || !!String(it.notes||'').trim(); }
+function replanCurrent(m){
+  const c = S.current; holdT = null;
+  const onDay = it => (exById(it.exId)?.day || c.day) === c.day;
+  const dayItems = c.items.filter(onDay), others = c.items.filter(it => !onDay(it));
+  const byId = new Map(dayItems.map(it => [it.exId, it]));
+  const plan = exercisesForDay(c.day, false, m); const planIds = new Set(plan.map(e => e.id));
+  const next = plan.map(ex => byId.get(ex.id) || makeItem(ex, c.week));
+  const keep = dayItems.filter(it => !planIds.has(it.exId) && itemTouched(it));
+  const added = plan.filter(ex => !byId.has(ex.id)).length, removed = dayItems.filter(it => !planIds.has(it.exId) && !itemTouched(it)).length;
+  c.items = [...next, ...keep, ...others]; c.mode = m;
+  return {added, removed, kept: keep.length};
+}
+function setMode(m){
+  if(!MODES[m]) return; const was = curMode(); S.settings.mode = m;
+  let msg = MODES[m] + ' mode';
+  if(S.current && isLiftDay(S.current.day) && (S.current.mode || was) !== m){
+    const r = replanCurrent(m);
+    if(r.added || r.removed) msg += ` · workout updated (${r.added} in, ${r.removed} out${r.kept ? `, ${r.kept} logged kept` : ''})`;
+  }
+  save(); render(); toast(msg, 2800);
 }
 function makeItem(ex, w){
   const sg = suggest(ex, w); const n = Math.max(1, +ex.sets||3);
@@ -680,29 +768,50 @@ function vWorkout(){
   const c = S.current;
   if(!c){
     const nd = nextDay();
-    return `<header class="top"><div><h1>Workout</h1><div class="sub">Week ${curWeek()}</div></div></header>
+    return `<header class="top"><div><h1>Workout</h1><div class="sub">Week ${curWeek()}</div></div>${modeTag()}</header>
     ${weekBanners(curWeek())}
-    <div class="seg">${Object.entries(MODES).map(([k,v])=>`<button class="${(S.settings.mode||'bjj')===k?'on':''}" data-a="mode" data-m="${k}">${v}</button>`).join('')}</div>
+    ${modeSeg()}
     ${['A','B','C','D','M','K'].map(d => { const locked = d==='D' && !S.settings.ptCleared; return `
       <div class="card ${locked?'locked-card':''}"><div class="row"><div class="daybadge">${DAYS[d].section?(d==='M'?'🧘':'⚖️'):d}</div><div class="grow"><b>${esc(dayName(d))}</b>${d===nd?' <span class="pill green">Up next</span>':''}${locked?' <span class="pill">🔒 PT clearance</span>':''}
-      <div class="small" style="color:#b7d9c4;margin-top:4px">🥋 ${esc(DAYS[d].bjj)}</div>
-      <div class="small muted" style="margin-top:4px">${exercisesForDay(d).map(e=>(e.main?'★ ':'')+esc(e.name)+(e.joint?' ⛨':'')).join(' · ')}</div></div></div>
+      ${descLine(d, 'small', 'margin-top:4px')}
+      <div class="small muted" style="margin-top:4px">${exercisesForDay(d).map(e=>(e.main?'★ ':'')+esc(e.name)+(e.joint?' ⛨':'')).join(' · ')}${isLiftDay(d)?' · 🚴 bike finisher':''}</div></div></div>
       <div style="margin-top:10px">${locked ? `<button class="btn" disabled>Locked until PT clears you</button>` : `<button class="btn ${d===nd?'primary':''}" data-a="start" data-day="${d}">${DAYS[d].section?'Start '+esc(dayName(d)):'Start Day '+d}</button>`}</div></div>`; }).join('')}`;
   }
   const doneCount = c.items.reduce((a,it)=>a+doneSets(it).length,0), total = c.items.reduce((a,it)=>a+it.sets.length,0);
+  const lift = isLiftDay(c.day);
   return `
-  <div class="wo-head"><div class="row between"><div><div class="small muted">Week ${c.week}${c.deload?' · Deload':''}</div><div style="font-size:20px;font-weight:800">${esc(dayFull(c.day))}</div><div class="tiny" style="color:#b7d9c4">🥋 ${esc(DAYS[c.day].bjj)}</div></div>
+  <div class="wo-head m-${curMode()}"><div class="row between"><div><div class="small muted">Week ${c.week}${c.deload?' · Deload':''} · ${modeTag()}</div><div style="font-size:20px;font-weight:800">${esc(dayFull(c.day))}</div>${descLine(c.day, 'tiny')}</div>
     <div class="pill ${doneCount===total?'green':''}">${doneCount}/${total} sets</div></div>
     <div class="row between" style="margin-top:8px"><span class="small muted">Rest timer</span><div class="row" style="gap:6px">
       <button class="mini" data-a="restadj" data-d="-15">−</button><b id="restlen" style="min-width:48px;text-align:center">${c.rest}s</b><button class="mini" data-a="restadj" data-d="15">+</button>
       <button class="btn sm" data-a="reststart">Start</button></div></div></div>
+  ${lift ? `${modeSeg()}<div class="warmup small" id="warmupNote">🚴 Optional: 3–5 min easy spin to warm up.</div>` : ''}
   ${weekBanners(c.week)}
   ${c.items.some(it=>exById(it.exId)?.day==='M') ? '<div class="banner amber"><div class="ico">🧘</div><div class="small"><b>Neck</b>Gentle, pain-free range of motion only, as your surgeon or PT allows. Never force-stretch a fused neck. Mobility holds are checked off per set, like a checklist.</div></div>' : ''}
   ${c.items.map((it,i)=>exCard(it,i)).join('')}
+  ${lift ? bikeFinishCard(c) : ''}
   <div class="card"><h3>Add-ons</h3><div class="btns">${['M','K'].map(d=>{ const inWo = c.items.some(it=>exById(it.exId)?.day===d); return `<button class="btn sm" data-a="addon" data-day="${d}" ${inWo?'disabled':''}>${inWo?'✓ ':'+ '}${esc(dayName(d))}</button>`; }).join('')}</div></div>
   <div class="card"><div class="small muted" style="margin-bottom:10px">Only exercises with at least one checked set are saved. Skip anything that hurts or that you’re not cleared for.</div>
     <button class="btn primary" data-a="finish" id="finishBtn">Finish & save workout</button>
     <div style="height:10px"></div><button class="btn ghost" data-a="discard">Discard workout</button></div>`;
+}
+function bikeFinishCard(c){
+  const ride = c.bikeRideId ? S.bike.find(b => b.id === c.bikeRideId) : null;
+  if(ride) return `<div class="card bikefinish done" id="bikeFinish"><div class="row"><div class="daybadge">🚴</div><div class="grow"><b>Finish with the bike</b>
+    <div class="small">✓ Logged to your bike log: ${ride.min} min · level ${ride.res} · knee ${ride.knee}/10</div></div><span class="pill green">Done</span></div>
+    ${+ride.knee>=4?'<div class="small" style="color:var(--amber);margin-top:6px">⚠ Knee flagged. Next ride backs off automatically; tell your PT if swelling or pain lasts.</div>':''}
+    <div style="margin-top:8px"><button class="btn sm ghost" data-a="bikeundo">Undo bike log</button></div></div>`;
+  const bs = bikeSuggest();
+  return `<div class="card bikefinish" id="bikeFinish"><div class="row"><div class="daybadge">🚴</div><div class="grow"><b>Finish with the bike</b>
+    <div class="bikesugg" id="bikeFinishText">${esc(bikeFinishText(bs))}</div></div></div>
+    <div class="small muted" style="margin-top:6px">${bs.kind==='flag'?'⚠ ':''}${esc(bs.reason)}</div>
+    <div class="row" style="gap:10px;margin-top:8px">
+      <div class="grow"><label class="f">Minutes</label><div class="stepper"><button data-a="bstep" data-f="bfMin" data-d="-1">−</button><input id="bfMin" inputmode="numeric" value="${bs.min}"><button data-a="bstep" data-f="bfMin" data-d="1">+</button></div></div>
+      <div class="grow"><label class="f">Level</label><div class="stepper"><button data-a="bstep" data-f="bfRes" data-d="-1">−</button><input id="bfRes" inputmode="numeric" value="${bs.res}"><button data-a="bstep" data-f="bfRes" data-d="1">+</button></div></div></div>
+    <div class="row between"><label class="f">Knee feel (0 = great)</label><span class="painval" id="bfKneeV" style="color:#22c55e">0/10</span></div>
+    <input type="range" min="0" max="10" value="0" id="bfKnee" data-in="bfknee" aria-label="Knee feel 0 to 10">
+    <div class="tiny dim" style="margin:4px 0 10px">Knee swelling or pain after riding? Back off, and tell your PT if it lasts.</div>
+    <button class="btn primary" data-a="bikefinish" id="bikeFinishBtn">🚴 Log ride to bike log</button></div>`;
 }
 function exCard(it, i){
   const ex = exById(it.exId) || {};
@@ -716,7 +825,7 @@ function exCard(it, i){
   return `<div class="card ex ${allDone?'done':''}" id="ex-${i}">
     <div class="row between"><div class="grow"><div class="row wrap" style="gap:6px;margin-bottom:${(it.main||ex.joint||it.calibrating)?6:0}px">${it.main?'<span class="pill green">★ Main lift</span>':''}${it.calibrating?'<span class="pill amber">🎯 Calibrating</span>':''}${ex.joint?'<span class="pill" style="color:#93c5fd;border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.12)">⛨ Joint health</span>':''}</div><p class="title">${esc(it.name)}</p><div class="target">${it.sets.length} × ${tgt}${it.timed?' sec':''}${it.side?' per side':''}${it.bw?(it.timed?' · bodyweight':' · bodyweight/band'):''}${it.inc&&!it.bw?` · +${fmtW(it.inc)} ${U()} steps`:''}</div></div>${allDone?'<span class="pill green">Done</span>':''}</div>
     ${ex.caution ? `<div class="caution">⚠ ${esc(ex.caution)}</div>` : ''}
-    ${ex.help ? `<div class="small" style="color:#b7d9c4;margin-top:6px">🥋 Helps: ${esc(ex.help)}</div>` : ''}
+    ${ex.help && curMode()==='bjj' ? `<div class="small matnote">🥋 Mat note: ${esc(ex.help)}</div>` : ''}
     <div class="sugg ${cls}"><b>${head}${isNew?'Starting suggestion':'Suggested'}: ${sugTxt}</b><div class="small muted">${esc(sg.reason)}</div></div>
     <div class="last">${it.last ? `Last time (${fmtDate(it.last.date,{month:'short',day:'numeric'})}): <b style="color:var(--text)">${esc(it.last.text)}</b>` : 'No history yet'}</div>
     <div class="exbtns"><button class="btn" data-a="watch" data-ex="${esc(it.exId)}">▶ Watch form</button><button class="btn" data-a="record" data-ex="${esc(it.exId)}" data-i="${i}">● Record my form</button></div>
@@ -786,7 +895,7 @@ function finishWorkout(){
   const items = c.items.filter(it => doneSets(it).length).map(it => ({exId:it.exId, name:it.name, timed:it.timed, side:it.side, bw:!!it.bw, main:!!it.main, repMin:it.repMin, repMax:it.repMax, inc:it.inc, planned:it.planned,
     sets: it.sets.map(s => ({w:+s.w||0, r:+s.r||0, done:!!s.done})), pain:+it.pain||0, feel:it.feel||'', feelBase:it.feelBase, manualAfterFeel:!!it.manualAfterFeel, notes:it.notes||''}));
   if(!items.length){ if(!confirm('No sets are checked off. Discard this workout?')) return; S.current=null; save(); keepAwake(false); go('home'); return; }
-  const sess = {id:c.id, date:c.date||todayISO(), day:c.day, week:weekOf(c.date||todayISO()), deload:c.deload, startedAt:c.startedAt, finishedAt:new Date().toISOString(), items};
+  const sess = {id:c.id, date:c.date||todayISO(), day:c.day, mode:c.mode||curMode(), bikeRideId:c.bikeRideId||null, week:weekOf(c.date||todayISO()), deload:c.deload, startedAt:c.startedAt, finishedAt:new Date().toISOString(), items};
   S.sessions.push(sess); S.current = null; save(); keepAwake(false);
   const nw = curWeek();
   const lines = items.map(it => { const ex = exById(it.exId); if(!ex) return ''; const sg = suggest(ex, nw);
@@ -922,7 +1031,7 @@ function vProgress(){
   if(progSeg==='history'){
     const L = [...S.sessions].sort((a,b)=>(b.date+b.finishedAt).localeCompare(a.date+a.finishedAt));
     body = L.length ? L.map(s => { const vol = s.items.filter(i=>!i.timed&&!i.bw).reduce((a,it)=>a+it.sets.filter(x=>x.done).reduce((b,x)=>b+x.w*x.r,0),0);
-      return `<details class="card sess"><summary class="row"><div class="daybadge">${s.day}</div><div class="grow"><b>${esc(dayName(s.day))}</b>${s.deload?' <span class="pill">Deload</span>':''}<div class="small muted">${fmtDate(s.date)} · week ${s.week} · ${s.items.length} exercises · vol ${vol.toLocaleString()} ${U()}</div></div><span class="muted">▾</span></summary>
+      return `<details class="card sess"><summary class="row"><div class="daybadge">${s.day}</div><div class="grow"><b>${esc(dayName(s.day, s.mode))}</b>${s.deload?' <span class="pill">Deload</span>':''}${s.mode?` <span class="modetag sm m-${s.mode}">${MODE_ICON[s.mode]} ${esc(MODES[s.mode])}</span>`:''}<div class="small muted">${fmtDate(s.date)} · week ${s.week} · ${s.items.length} exercises · vol ${vol.toLocaleString()} ${U()}</div></div><span class="muted">▾</span></summary>
       <div style="margin-top:10px">${s.items.map(it=>`<div class="kv"><div class="grow"><b class="small">${esc(it.name)}</b><div class="tiny muted">${esc(lastText(it))}${it.feel?' · felt '+esc(it.feel):''}${it.notes?' · '+esc(it.notes):''}</div></div>${hitTop(it)?'<span class="pill green">Top ✓</span>':''}${it.pain>=4?'<span class="pill amber">Pain '+it.pain+'</span>':''}</div>`).join('')}
       <div style="margin-top:10px"><button class="btn sm danger" data-a="sessdel" data-id="${s.id}">Delete session</button></div></div></details>`; }).join('')
       : '<div class="card muted">No workouts saved yet.</div>';
@@ -952,7 +1061,7 @@ function vSettings(){
   <div class="card"><h3>Program</h3>
     <div class="kv"><div><b>Start date</b><div class="tiny muted">Week ${curWeek()} today · deload every 6th week</div></div><input type="date" class="txt" style="width:auto" value="${s.startDate||todayISO()}" data-in="startDate"></div>
     <div class="kv"><div><b>Training mode</b><div class="tiny muted">Main lifts, progression, and history carry across both modes</div></div></div>
-    <div class="seg" style="margin-top:-4px">${Object.entries(MODES).map(([k,v])=>`<button class="${(s.mode||'bjj')===k?'on':''}" data-a="mode" data-m="${k}">${v}</button>`).join('')}</div>
+    ${modeSeg()}
     <div class="kv"><b>Units</b><span class="pill">lb</span></div>
     <div class="kv"><div><b>Default rest timer</b><div class="tiny muted">seconds</div></div><div class="stepper" style="width:150px"><button data-a="restdef" data-d="-15">−</button><input readonly value="${s.restDefault}"><button data-a="restdef" data-d="15">+</button></div></div>
     <div class="kv"><div><b>Bike starting resistance</b><div class="tiny muted">low level on your bike</div></div><div class="stepper" style="width:150px"><button data-a="bikeres" data-d="-1">−</button><input readonly value="${s.bikeStartRes}"><button data-a="bikeres" data-d="1">+</button></div></div>
@@ -970,7 +1079,7 @@ function vSettings(){
     <input type="file" id="importInput" accept="application/json,.json" class="hidden"></div>
   <div class="card"><h3>Danger zone</h3><button class="btn danger" data-a="reset">Reset all data…</button></div>
   <button class="card row" style="width:100%;text-align:left" data-a="go" data-v="safety"><span style="font-size:22px">🛡️</span><div class="grow"><b>Safety & about</b></div><span class="muted">›</span></button>
-  <div class="tiny dim" style="text-align:center;margin:8px 0 20px">Jeremy’s Workouts · offline single-file app · v1.0</div>`;
+  <div class="tiny dim" style="text-align:center;margin:8px 0 20px">Jeremy’s Workouts · offline single-file app · v1.1 (program ${PROGRAM_VERSION})</div>`;
 }
 function openExEditor(id){
   const e = id ? exById(id) : {id:'', day:'A', name:'', sets:3, repMin:8, repMax:12, inc:2.5, startW:0, cues:[], video:''};
@@ -1020,7 +1129,8 @@ function vSafety(){
   <div class="card safety"><h2>Before you train</h2><ul>
     <li>Get <b>every exercise and the stationary bike</b> cleared by your surgeon or PT, especially at 3 weeks post knee surgery.</li>
     <li><b>No leg loading</b> until your PT clears you. Day D stays locked until then.</li>
-    <li>No kneeling (half-kneeling landmine or Pallof) and no loaded carries until your knee is cleared. Use the standing or seated options.</li></ul></div>
+    <li>No kneeling or half-kneeling until your knee is cleared. The app uses standing versions (landmine press, Pallof press, cable lift) and no kneeling stretches.</li>
+    <li>Suitcase carries: do a standing hold (or seated grip hold) until your knee is fine walking under load.</li></ul></div>
   <div class="card safety"><h2>Stop rules</h2><ul>
     <li>Stop the exercise if you get sharp pain, numbness, tingling, or pain that radiates down an arm.</li>
     <li>Pain <b>4/10 or higher</b> = no weight increase next time (the app handles this automatically). If it keeps happening, talk to your PT.</li>
@@ -1048,18 +1158,19 @@ function vSafety(){
 
 /* ---------- PROGRAM ---------- */
 function vProgram(){
-  const w = curWeek();
-  return `<header class="top"><div class="row"><button class="iconbtn" data-a="go" data-v="home" aria-label="Back">${ICONS.back}</button><div><h1>Program</h1><div class="sub">Strength + grappling · Week ${w}</div></div></div></header>
-  <div class="card small"><b>How it works:</b> the main lift (★) comes first at 4 × 6-8, then accessories at 3 × 8-12, plus 2-3 joint-health lifts (⛨) each day. <b>Strength</b> mode uses classic accessories, and <b>BJJ</b> mode swaps in grappling-specific ones; main lifts and history are shared. Mobility and Balance & Core can be standalone sessions or add-ons. Weeks 1-2 are easy (3-4 reps in reserve). Hit the top of the range on every set with pain under 4, and the app adds the increment next time. Every 6th week is a deload at 70%.</div>
-  <div class="seg">${Object.entries(MODES).map(([k,v])=>`<button class="${(S.settings.mode||'bjj')===k?'on':''}" data-a="mode" data-m="${k}">${v}</button>`).join('')}</div>
+  const w = curWeek(); const bs = bikeSuggest();
+  return `<header class="top"><div class="row"><button class="iconbtn" data-a="go" data-v="home" aria-label="Back">${ICONS.back}</button><div><h1>Program</h1><div class="sub">Strength + grappling · Week ${w}</div></div></div>${modeTag()}</header>
+  <div class="card small"><b>How it works:</b> the main lift (★) comes first at 4 × 6-8, then accessories at 3 × 8-12, plus 2-3 joint-health lifts (⛨) each day. <b>Strength</b> mode uses classic hypertrophy accessories, and <b>BJJ</b> mode swaps in grappling carryover (frames, gi grips, rotational core, carries, and holds, each with a mat note); main lifts, progress, and history are shared. Every lifting day finishes with an easy bike spin from your bike ramp. Mobility and Balance & Core can be standalone sessions or add-ons. Weeks 1-2 are easy (3-4 reps in reserve). Hit the top of the range on every set with pain under 4, and the app adds the increment next time. Every 6th week is a deload at 70%.</div>
+  ${modeSeg()}
   ${['A','B','C','D','M','K'].map(d => { const locked = d==='D' && !S.settings.ptCleared; return `<div class="card ${locked?'locked-card':''}">
     <div class="row"><div class="daybadge">${DAYS[d].section?(d==='M'?'🧘':'⚖️'):d}</div><div class="grow"><b>${esc(dayName(d))}</b>${locked?' <span class="pill">🔒 PT clearance</span>':''}</div></div>
-    <div class="small" style="color:#b7d9c4;margin:8px 0 4px">🥋 ${esc(DAYS[d].bjj)}</div>
-    <table class="t"><tbody>${exercisesForDay(d).map(e=>`<tr><td>${e.main?'<b style="color:var(--green)">★</b> ':''}${e.joint?'<span style="color:#93c5fd">⛨</span> ':''}${esc(e.name)}${e.help?`<div class="tiny" style="color:#b7d9c4">${esc(e.help)}</div>`:''}${e.caution?`<div class="tiny" style="color:var(--amber)">${esc(e.caution)}</div>`:''}</td><td style="white-space:nowrap">${e.sets} × ${e.repMin===e.repMax?e.repMax:e.repMin+'-'+e.repMax}${e.timed?'s':''}${e.side?'/side':''}</td></tr>`).join('')}</tbody></table></div>`; }).join('')}
+    ${descLine(d, 'small', 'margin:8px 0 4px')}
+    <table class="t"><tbody>${exercisesForDay(d).map(e=>`<tr><td>${e.main?'<b style="color:var(--green)">★</b> ':''}${e.joint?'<span style="color:#93c5fd">⛨</span> ':''}${esc(e.name)}${e.help&&curMode()==='bjj'?`<div class="tiny matnote">🥋 ${esc(e.help)}</div>`:''}${e.caution?`<div class="tiny" style="color:var(--amber)">${esc(e.caution)}</div>`:''}</td><td style="white-space:nowrap">${e.sets} × ${e.repMin===e.repMax?e.repMax:e.repMin+'-'+e.repMax}${e.timed?'s':''}${e.side?'/side':''}</td></tr>`).join('')}
+      ${isLiftDay(d)?`<tr class="bikeline"><td>🚴 Finish with the bike<div class="tiny dim">From your bike ramp; logs straight to the bike log</div></td><td style="white-space:nowrap">${esc(bikeFinishText(bs))}</td></tr>`:''}</tbody></table></div>`; }).join('')}
   <div class="card"><h2>Suggested week</h2><table class="t"><tbody>
-    <tr><td>Mon</td><td>Day A · Push & Frame</td></tr><tr><td>Tue</td><td>Jiu-jitsu (or bike 10-20 min)</td></tr>
-    <tr><td>Wed</td><td>Day B · Pull & Grip</td></tr><tr><td>Thu</td><td>Jiu-jitsu (or bike)</td></tr>
-    <tr><td>Fri</td><td>Day C · Core & Carries</td></tr><tr><td>Sat</td><td>Bike or open mat (easy)</td></tr><tr><td>Sun</td><td>Rest</td></tr></tbody></table>
+    <tr><td>Mon</td><td>Day A · ${esc(dayName('A'))} + bike finisher</td></tr><tr><td>Tue</td><td>Jiu-jitsu (or bike 10-20 min)<div class="tiny" style="color:#b7d9c4">Bike optional: a few easy minutes as a knee warm-up</div></td></tr>
+    <tr><td>Wed</td><td>Day B · ${esc(dayName('B'))} + bike finisher</td></tr><tr><td>Thu</td><td>Jiu-jitsu (or bike)<div class="tiny" style="color:#b7d9c4">Bike optional: a few easy minutes as a knee warm-up</div></td></tr>
+    <tr><td>Fri</td><td>Day C · ${esc(dayName('C'))} + bike finisher</td></tr><tr><td>Sat</td><td>Bike or open mat (easy)</td></tr><tr><td>Sun</td><td>Rest</td></tr></tbody></table>
     <div class="tiny dim" style="margin-top:8px">Lift A / B / C on nonconsecutive days. Shift days around your class schedule, and avoid Day B (heavy grip) right before hard rolling. Add Day D only after PT clearance.</div></div>`;
 }
 
@@ -1084,7 +1195,13 @@ const A = {
   restplus: el => { const c=S.current; if(!c.restEnd) return; c.restEnd = Math.max(Date.now(), c.restEnd) + (+el.dataset.d)*1000; if(c.restEnd>Date.now()) c.restBeeped=false; save(); renderRest(); },
   restskip: () => { if(S.current){ S.current.restEnd=null; save(); } renderRest(); },
   finish: () => finishWorkout(),
-  mode: el => { S.settings.mode = el.dataset.m; save(); render(); toast((el.dataset.m==='bjj'?'BJJ / Grappling':'Strength')+' mode'); },
+  mode: el => setMode(el.dataset.m),
+  bikefinish: () => { const c = S.current; if(!c) return; const min = +$('#bfMin').value, res = +$('#bfRes').value, knee = +$('#bfKnee').value;
+    if(!(min > 0)){ toast('Enter minutes'); return; }
+    const r = logBikeRide(min, Math.max(1, res||1), knee, 'Finisher after Day '+c.day); c.bikeRideId = r.id; save(); render();
+    const el = $('#bikeFinish'); if(el) el.scrollIntoView({block:'center'});
+    toast(knee >= 4 ? 'Ride saved. Knee flagged; take it easy' : 'Ride saved to your bike log 🚴'); },
+  bikeundo: () => { const c = S.current; if(!c || !c.bikeRideId) return; S.bike = S.bike.filter(b => b.id !== c.bikeRideId); c.bikeRideId = null; save(); render(); toast('Bike log entry removed'); },
   neckiso: (el, ev) => { ev.preventDefault(); const on = !S.settings.neckIsoCleared;
     if(on && !confirm('Only turn this on if your SURGEON has explicitly cleared gentle neck isometrics after your fusion. Continue?')) return;
     S.settings.neckIsoCleared = on; save(); render(); },
@@ -1130,6 +1247,7 @@ document.addEventListener('input', ev => {
   const c = S.current;
   if(k==='pain'){ const i=+el.dataset.i; c.items[i].pain = +el.value; const pv=$('#pv-'+i); pv.textContent=el.value+'/10'; pv.style.color=painColor(+el.value); save(); }
   else if(k==='notes'){ c.items[+el.dataset.i].notes = el.value; save(); }
+  else if(k==='bfknee'){ const v = +el.value, lab = $('#bfKneeV'); if(lab){ lab.textContent = v+'/10'; lab.style.color = painColor(v); } }
 });
 document.addEventListener('change', ev => {
   const el = ev.target; const k = el.dataset && el.dataset.in;
