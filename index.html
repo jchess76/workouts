@@ -194,6 +194,12 @@ body[data-mode="strength"]{--accent:#a78bfa;--accentbg:rgba(167,139,250,.16);--a
 .hero li.bikeline{border-top:1px dashed rgba(255,255,255,.18);color:#bfe8cf}
 .card.bikefinish{border-color:rgba(96,165,250,.45)} .card.bikefinish.done{border-color:rgba(34,197,94,.45)}
 .bikesugg{font-size:17px;font-weight:800;margin-top:2px}
+.modetag.m-kit{color:#93c5fd;background:rgba(96,165,250,.13);border-color:rgba(96,165,250,.45)}
+.swapbtn{flex:none;min-height:34px;padding:0 10px}
+.swaplist{display:flex;flex-direction:column;gap:8px}
+.swapopt{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}
+.swapopt.cur{border-color:var(--green)}
+.pill.sm{font-size:11px;padding:2px 7px}
 table.t{width:100%;border-collapse:collapse;font-size:14px}
 table.t th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:right;padding:6px 4px;font-weight:700}
 table.t th:first-child,table.t td:first-child{text-align:left}
@@ -240,88 +246,126 @@ const DAYS = {
 const MODES = {strength:'Strength', bjj:'BJJ / Grappling'};
 /* Bump PROGRAM_VERSION whenever DEFAULT_EXERCISES changes: phones that saved an older list get the new defaults on next load
    (custom exercises, edited increments, and all history are kept). RETIRED_IDS = old default ids that are no longer in the program. */
-const PROGRAM_VERSION = 2;
+const PROGRAM_VERSION = 3;
 const RETIRED_IDS = ['shoulder_press','cuban_press','m_frog','k_birddog','k_bear'];
 /* Fields: day, mode ('both'|'strength'|'bjj'), main (main lift, first, 4x6-8), inc (lb step), startW (conservative first weight),
    bw (bodyweight/band: reps or seconds only), timed (seconds), secStep (+s per session while building), side (per arm/leg/side),
+   slot/kit/std/mach: variations of one slot. kit = 'stack' (pin-loaded machine or cable, nothing to carry), 'bw' (bodyweight/band), 'free' (dumbbells, plates, barbell, or carrying).
+   std = default normally; mach = default when "Machines & cables only" is on. Others in the slot are listed in the swap sheet.
    joint (tagged "Joint health"), needs:'neck' (hidden until surgeon clears neck isometrics), help (mat note: how it helps grappling; shown in BJJ mode), caution. */
 const E = (id, day, mode, name, sets, repMin, repMax, o={}) => Object.assign({id, day, mode, name, sets, repMin, repMax, inc:0, startW:0}, o);
 const V = (id, title, chan) => ({video:YT(id), vtitle:title, vchan:chan});
 const NECK = 'Neck neutral: chin slightly tucked, no craning or jutting';
 const DEFAULT_EXERCISES = [
   /* ================= DAY A · PUSH (Strength) / PUSH & FRAME (BJJ) ================= */
-  E('chest_press','A','both','Chest press machine or DB bench',4,6,8,{main:true, inc:5, startW:50, help:'Frames: the pushing strength that keeps side control and mount off your chest', ...V('xUm0BiZCWlQ','How To: Chest Press (Cybex)','ScottHermanFitness'),
-    cues:['Seat height: handles line up with mid-chest','Head back on the pad, chin neutral (no jutting forward)','Shoulder blades down and back, wrists straight','Exhale as you press; stop just short of hard lockout','DB option: feet planted, head stays on the bench, and don’t crane your neck to sit up']}),
-  E('incline_db','A','strength','Incline DB press',3,8,10,{inc:5, startW:20, ...V('0f6-uCUKqgA','Incline Dumbbell Press BETTER | Targeting The Muscle Series','Renaissance Periodization'),
+  E('chest_press','A','both','Chest press machine',4,6,8,{slot:'a_main', kit:'stack', std:true, mach:true, main:true, inc:5, startW:50, help:'Frames: the pushing strength that keeps side control and mount off your chest', ...V('xUm0BiZCWlQ','How To: Chest Press (Cybex)','ScottHermanFitness'),
+    cues:['Seat height: handles line up with mid-chest','Head back on the pad, chin neutral (no jutting forward)','Shoulder blades down and back, wrists straight','Exhale as you press; stop just short of hard lockout']}),
+  E('db_bench','A','both','DB bench press',4,6,8,{slot:'a_main', kit:'free', main:true, inc:5, startW:25, help:'Frames: the pushing strength that keeps side control and mount off your chest', ...V('QsYre__-aro','STOP Doing Dumbbell Press Like This (5 Mistakes Slowing Your Chest Gains)','Jeremy Ethier'),
+    cues:['Feet planted, head stays on the bench','Get the DBs up from your thighs; don’t crane your neck to sit up','Elbows about 45°, lower to mid-chest','Weight is per hand']}),
+  E('incline_db','A','strength','Incline DB press',3,8,10,{slot:'a_incline', kit:'free', std:true, inc:5, startW:20, ...V('0f6-uCUKqgA','Incline Dumbbell Press BETTER | Targeting The Muscle Series','Renaissance Periodization'),
     cues:['Low incline (15-30°)','Head supported on the bench, neck relaxed','Elbows about 45° from your sides; lower to upper chest','Get the DBs up from your thighs; don’t crane your neck to sit up']}),
-  E('pec_fly','A','strength','Pec deck or cable fly',3,10,12,{inc:2.5, startW:40, ...V('3jYo5cMU3d4','The Chest PEC DEC FLY | Exercise Form Guide','Max Euceda'),
+  E('lh_cable_fly','A','strength','Low-to-high cable fly',3,10,12,{slot:'a_incline', kit:'stack', mach:true, inc:2.5, startW:10, ...V('KFl3Re5UbPo','How To: Low To High Cable Fly','Live Lean TV Daily Exercises'),
+    cues:['Pulleys at the bottom, stand in the middle with a split stance','Sweep the handles up and together to upper-chest height, soft elbows','Chin neutral; don’t push your head forward','Weight = stack setting per side']}),
+  E('pec_fly','A','strength','Pec deck or cable fly',3,10,12,{slot:'a_fly', kit:'stack', std:true, mach:true, inc:2.5, startW:40, ...V('3jYo5cMU3d4','The Chest PEC DEC FLY | Exercise Form Guide','Max Euceda'),
     cues:['Slight bend in the elbows, fixed','Head against the pad, chin neutral','Don’t let your arms travel too far back','Squeeze for a second where the handles meet']}),
-  E('lateral_raise','A','strength','Seated DB lateral raise (light)',3,10,12,{inc:2.5, startW:8, ...V('3zohLHTjFH0','How to Do Seated Laterals','LIVESTRONG'),
+  E('lateral_raise','A','strength','Seated DB lateral raise (light)',3,10,12,{slot:'a_lat', kit:'free', std:true, inc:2.5, startW:8, ...V('3zohLHTjFH0','How to Do Seated Laterals','LIVESTRONG'),
     cues:['Seated, light weight, slight bend in the elbows','Raise only to shoulder height','No shrugging: keep your shoulders away from your ears',NECK]}),
-  E('landmine_press','A','bjj','Single-arm landmine press (standing)',3,8,10,{inc:2.5, startW:25, side:true, help:'Frames: the angled one-arm push you use to frame on the hip or neck and shrimp away', ...V('U6mT6uZkajk','Staggered Single Arm Landmine Press','E3 Rehab Exercise Library'),
+  E('cable_lateral','A','strength','Cable lateral raise (single arm)',3,12,15,{slot:'a_lat', kit:'stack', mach:true, inc:2.5, startW:5, side:true, ...V('Z5FA9aq3L6A','How To Do Cable Lateral Raises','PureGym'),
+    cues:['Low pulley, handle in the far hand, stand side-on and hold the frame','Raise to shoulder height only, slight bend in the elbow','No shrugging; shoulders away from your ears',NECK,'Reps are per arm']}),
+  E('landmine_press','A','bjj','Single-arm landmine press (standing)',3,8,10,{slot:'a_frame', kit:'free', std:true, inc:2.5, startW:25, side:true, help:'Frames: the angled one-arm push you use to frame on the hip or neck and shrimp away', ...V('U6mT6uZkajk','Staggered Single Arm Landmine Press','E3 Rehab Exercise Library'),
     cues:['Standing, staggered stance, both feet flat (no half-kneeling while the knee heals)','Angled press (not straight overhead), so it’s neck-friendly','Ribs down, glutes tight, don’t lean back or twist','Head neutral: press past your face, don’t tilt your head out of the way','Weight = load on the bar end. Reps are per arm']}),
-  E('floor_press','A','bjj','Single-arm DB press (bench or floor)',3,8,10,{inc:2.5, startW:20, side:true, help:'Bottom side control: pressing one arm while your trunk fights the roll', ...V('0S0pPgQXWNk','Single Arm Dumbbell Floor Press','Functional Bodybuilding'),
+  E('cable_sa_press','A','bjj','Single-arm cable press (standing, split stance)',3,8,10,{slot:'a_frame', kit:'stack', mach:true, inc:2.5, startW:15, side:true, help:'Frames: a one-arm push while your trunk stays square, like framing on the hip and shrimping away', ...V('RaNrQRI9MFI','Split Stance Single Arm Cable Chest Press','Functional Effect Fitness & Rehabilitation'),
+    cues:['Cable at chest height, split stance with both feet flat','Press straight out without twisting; the other hand reaches or rests','Ribs down; head neutral, press past your face without tilting',NECK,'Weight = stack setting. Reps are per arm']}),
+  E('floor_press','A','bjj','Single-arm DB press (bench or floor)',3,8,10,{slot:'a_sapress', kit:'free', std:true, inc:2.5, startW:20, side:true, help:'Bottom side control: pressing one arm while your trunk fights the roll', ...V('0S0pPgQXWNk','Single Arm Dumbbell Floor Press','Functional Bodybuilding'),
     cues:['Flat bench is easiest to get on and off with the knee; floor is fine if getting up is easy','Head resting down, neck relaxed','Brace so your body doesn’t roll toward the weight','Legs straight is fine to protect the knee','Weight is per hand. Reps are per arm']}),
-  E('plate_squeeze','A','bjj','Plate squeeze press hold (Svend press)',3,20,30,{inc:2.5, startW:10, timed:true, secStep:5, help:'Clamping: the chest squeeze for closing elbows, framing, and holding a tight body lock', ...V('vNxezQEqy6I','Build a Bigger Chest with the Plate Pinch/Svend Press | Mark Bell','Bodybuilding.com'),
+  E('machine_sa_press','A','bjj','Single-arm machine chest press',3,8,10,{slot:'a_sapress', kit:'stack', mach:true, inc:5, startW:20, side:true, help:'Bottom side control: pressing one arm while your trunk fights the twist', ...V('jSuDZxWtDrI','Metropolitan: Chest Press Machine (One arm)','Bilt Wellness'),
+    cues:['Seated chest press, one handle at a time (if the handles are linked, use the cable press instead)','Head back on the pad, chin neutral','Brace so your torso doesn’t twist toward the working arm','Reps are per arm']}),
+  E('plate_squeeze','A','bjj','Plate squeeze press hold (Svend press)',3,20,30,{slot:'a_squeeze', kit:'free', std:true, inc:2.5, startW:10, timed:true, secStep:5, help:'Clamping: the chest squeeze for closing elbows, framing, and holding a tight body lock', ...V('vNxezQEqy6I','Build a Bigger Chest with the Plate Pinch/Svend Press | Mark Bell','Bodybuilding.com'),
     cues:['Standing tall, squeeze two smooth plates together between flat palms at chest height','Press them out until your arms are nearly straight, then HOLD while squeezing hard','Shoulders down, no shrug, chin neutral','Weight = total of both plates. Time is the hold']}),
-  E('pushdown','A','strength','Cable triceps pushdown',3,10,12,{inc:2.5, startW:30, ...V('2-LAMcpzODU','How To: Tricep Pushdown (Life Fitness Cable)','ScottHermanFitness'),
+  E('cable_squeeze_hold','A','bjj','Cable crossover squeeze hold',3,20,30,{slot:'a_squeeze', kit:'stack', mach:true, inc:2.5, startW:10, timed:true, secStep:5, help:'Clamping: the chest squeeze for closing elbows, framing, and holding a tight body lock', ...V('CS6_F3IZGno','Cable Crossovers','Exercise and Performance Nutrition Laboratory'),
+    cues:['Pulleys at shoulder height, split stance in the middle','Bring the handles together in front of your chest, then HOLD and squeeze hard','Shoulders down, no shrug, chin neutral','Weight = stack setting per side. Time is the hold']}),
+  E('pushdown','A','strength','Cable triceps pushdown',3,10,12,{slot:'a_tri', kit:'stack', std:true, mach:true, inc:2.5, startW:30, ...V('2-LAMcpzODU','How To: Tricep Pushdown (Life Fitness Cable)','ScottHermanFitness'),
     cues:['Elbows pinned to your sides','Stand tall, chin slightly tucked','Don’t lean your head over the stack','Full extension, controlled return']}),
-  E('shoulder_taps','A','bjj','Plank shoulder taps',3,10,10,{bw:true, side:true, help:'Posting: a stable base on one hand while you frame or post with the other', ...V('amA9sc6dmH0','Plank Shoulder Taps','Foundation Chiropractic + Physiotherapy'),
+  E('shoulder_taps','A','bjj','Plank shoulder taps',3,10,10,{slot:'a_post', kit:'bw', std:true, bw:true, side:true, help:'Posting: a stable base on one hand while you frame or post with the other', ...V('amA9sc6dmH0','Plank Shoulder Taps','Foundation Chiropractic + Physiotherapy'),
     cues:['Hands under your shoulders; hands on a bench makes it easier','On your toes, not your knees, while the knee heals','Neck long: look at the floor slightly ahead','Feet wide, hips still, slow taps. Reps are per side']}),
-  E('ext_rot','A','both','Cable external rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, help:'Shoulder armor for kimura and americana pressure; tap early anyway', ...V('GxDF2AYsI1Q','Cable Shoulder External Rotation','Physio Plus Fitness'),
+  E('cable_serratus','A','bjj','Cable serratus punch (standing)',3,10,12,{slot:'a_post', kit:'stack', mach:true, inc:2.5, startW:10, side:true, help:'Posting and stiff-arm frames: a strong shoulder blade behind a straight arm', ...V('oYeatOF4aoE','🔥 Master the Cable Serratus Punch | Build Shoulder Stability & Core Strength','Fairway Physio: Physical Therapy & Wellness'),
+    cues:['Cable at chest height behind you, split stance','Arm straight: punch forward by reaching the shoulder blade, then let it return','Small movement; no shrugging, chin neutral','Reps are per arm']}),
+  E('ext_rot','A','both','Cable external rotation',3,12,15,{slot:'a_cuff', kit:'stack', std:true, mach:true, joint:true, inc:2.5, startW:5, side:true, help:'Shoulder armor for kimura and americana pressure; tap early anyway', ...V('GxDF2AYsI1Q','Cable Shoulder External Rotation','Physio Plus Fitness'),
     cues:['Cable at elbow height; rolled towel between your elbow and side','Rotate out slowly, keeping the elbow glued to the towel','Light! Rotator cuff work, not a strength test',NECK,'Reps are per arm']}),
-  E('wrist_curl','A','strength','DB wrist curls',3,12,15,{joint:true, inc:2.5, startW:10, ...V('2wPpcJBe03o','Dumbbell Bench Wrist Curl','Renaissance Periodization'),
+  E('wrist_curl','A','strength','DB wrist curls',3,12,15,{slot:'a_wrist', kit:'free', std:true, joint:true, inc:2.5, startW:10, ...V('2wPpcJBe03o','Dumbbell Bench Wrist Curl','Renaissance Periodization'),
     cues:['Forearms resting on a bench or your thighs, palms up','Let the DB roll to the fingers, then curl the wrist up','Slow, full range, no bouncing','Forearm strength for heavier pressing and pulling']}),
-  E('rev_wrist_curl','A','bjj','DB reverse wrist curls',3,12,15,{joint:true, inc:2.5, startW:5, help:'Elbow health: balances all the gripping so your elbows survive gi grips', ...V('krZ6pWGZ8xo','How to Do Dumbbell Reverse Wrist Curls','LIVESTRONG'),
+  E('cable_wrist_curl','A','strength','Cable wrist curls',3,12,15,{slot:'a_wrist', kit:'stack', mach:true, joint:true, inc:2.5, startW:20, ...V('WVAaKJvToe0','Cable Wrist Curl','Renaissance Periodization'),
+    cues:['Low pulley with a straight bar; sit on a bench with forearms on your thighs, palms up','Let the bar roll to the fingers, then curl the wrist up','Slow, full range, no bouncing','Forearm strength for heavier pressing and pulling']}),
+  E('rev_wrist_curl','A','bjj','DB reverse wrist curls',3,12,15,{slot:'a_revwrist', kit:'free', std:true, joint:true, inc:2.5, startW:5, help:'Elbow health: balances all the gripping so your elbows survive gi grips', ...V('krZ6pWGZ8xo','How to Do Dumbbell Reverse Wrist Curls','LIVESTRONG'),
     cues:['Palms down, forearms supported','Lift the back of the hand up, lower slowly','Light: wrist extensors tire fast','Balances all the gripping in jiu-jitsu (elbow health)']}),
+  E('cable_rev_wrist','A','bjj','Cable reverse wrist curls',3,12,15,{slot:'a_revwrist', kit:'stack', mach:true, joint:true, inc:2.5, startW:10, help:'Elbow health: balances all the gripping so your elbows survive gi grips', ...V('N-BdFkvrsek','Cable Reverse Wrist Curls','Higher Ground Performance'),
+    cues:['Low pulley with a straight bar, palms down, forearms supported on your thighs','Lift the back of the hands up, lower slowly','Light: wrist extensors tire fast','Balances all the gripping in jiu-jitsu (elbow health)']}),
   /* ================= DAY B · PULL (Strength) / PULL & GRIP (BJJ) ================= */
-  E('lat_pulldown','B','both','Lat pulldown (or assisted pull-up)',4,6,8,{main:true, inc:5, startW:60, help:'Pulling: break posture in closed guard and pull opponents onto your frames', ...V('SALxEARiMkw','How to do Lat Pulldowns (AVOID MISTAKES!)','ATHLEAN-X™'),
+  E('lat_pulldown','B','both','Lat pulldown (or assisted pull-up)',4,6,8,{slot:'b_main', kit:'stack', std:true, mach:true, main:true, inc:5, startW:60, help:'Pulling: break posture in closed guard and pull opponents onto your frames', ...V('SALxEARiMkw','How to do Lat Pulldowns (AVOID MISTAKES!)','ATHLEAN-X™'),
     cues:['Pull to the upper chest, NEVER behind the neck','Chest up, slight lean back, chin neutral','Start by pulling the shoulder blades down, then drive the elbows down','Assisted pull-up option: step on and off carefully (knee), never jump or drop']}),
-  E('cs_row','B','strength','Chest-supported row',3,8,10,{inc:5, startW:50, ...V('H75im9fAUMc','Chest-Supported Row','Men’s Health'),
+  E('cs_row','B','strength','Chest-supported row',3,8,10,{slot:'b_row', kit:'free', std:true, inc:5, startW:50, ...V('H75im9fAUMc','Chest-Supported Row','Men’s Health'),
     cues:['Chest on the pad; look at the pad, not up at the mirror','Squeeze the shoulder blades together at the top','No shrugging, no jerking']}),
-  E('straight_arm_pd','B','strength','Straight-arm cable pulldown',3,10,12,{inc:2.5, startW:30, ...V('98W63pVdW38','How To: Straight Arm Pull Down (Cable Machine)','Fitness Lab'),
+  E('machine_row','B','strength','Seated machine row (chest pad)',3,8,10,{slot:'b_row', kit:'stack', mach:true, inc:5, startW:50, ...V('TeFo51Q_Nsc','How To Use The Seated Row Machine','PureGym'),
+    cues:['Pin-loaded row: chest on the pad, feet flat','Look straight ahead, not up at the mirror','Squeeze the shoulder blades together at the back','No shrugging, no jerking']}),
+  E('straight_arm_pd','B','strength','Straight-arm cable pulldown',3,10,12,{slot:'b_sapd', kit:'stack', std:true, mach:true, inc:2.5, startW:30, ...V('98W63pVdW38','How To: Straight Arm Pull Down (Cable Machine)','Fitness Lab'),
     cues:['Stand tall with a slight hip hinge, arms long, elbows soft','Sweep the bar down to your thighs using your lats','Ribs down; don’t let your head drop or jut forward','Slow return until you feel the lats stretch']}),
-  E('db_curl','B','strength','DB curls',3,10,12,{inc:2.5, startW:15, ...V('yTWO2th-RIY','Stop Doing Dumbbell Bicep Curls Like This!','ATHLEAN-X™'),
+  E('db_curl','B','strength','DB curls',3,10,12,{slot:'b_curl', kit:'free', std:true, inc:2.5, startW:15, ...V('yTWO2th-RIY','Stop Doing Dumbbell Bicep Curls Like This!','ATHLEAN-X™'),
     cues:['Elbows at your sides, no swinging','Shoulders down, don’t hunch','Squeeze at the top, lower in about 2 seconds']}),
-  E('towel_row','B','bjj','Towel / gi-grip cable row',3,8,10,{inc:5, startW:40, help:'Collar and sleeve grips: row while your hands hold a gi-style grip', ...V('Ftzz4sa7NeI','Cable Row w/ towel grip','The BJJ Physio'),
+  E('machine_curl','B','strength','Machine preacher curl',3,10,12,{slot:'b_curl', kit:'stack', mach:true, inc:5, startW:30, ...V('Ja6ZlIDONac','Machine Preacher Curl','Renaissance Periodization'),
+    cues:['Seat set so your armpits sit snug on the pad','Curl up, squeeze, lower in about 2 seconds','Don’t let the weight yank your elbows straight at the bottom',NECK]}),
+  E('towel_row','B','bjj','Towel / gi-grip cable row',3,8,10,{slot:'b_towelrow', kit:'stack', std:true, mach:true, inc:5, startW:40, help:'Collar and sleeve grips: row while your hands hold a gi-style grip', ...V('Ftzz4sa7NeI','Cable Row w/ towel grip','The BJJ Physio'),
     cues:['Loop a towel or old gi lapel through the cable and squeeze it like a collar grip','Sit tall, neutral neck, no rocking','Pull elbows back, pause, and control the return','Stop the set when your grip fails, not your back']}),
-  E('dead_hang','B','bjj','Towel / gi hang (feet supported)',3,20,40,{bw:true, timed:true, secStep:5, help:'Grip endurance: hold lapel and sleeve grips for a whole round', ...V('bI9KZVdFSmQ','Why & How "Hanging" STOPS Shoulder Pain & Surgery','Bob & Brad'),
+  E('dead_hang','B','bjj','Towel / gi hang (feet supported)',3,20,40,{slot:'b_hang', kit:'bw', std:true, bw:true, timed:true, secStep:5, help:'Grip endurance: hold lapel and sleeve grips for a whole round', ...V('bI9KZVdFSmQ','Why & How "Hanging" STOPS Shoulder Pain & Surgery','Bob & Brad'),
     cues:['Drape a towel or gi over the pull-up bar and grip it like lapels','Keep your feet on a box or the floor (partial hang) to unload your spine and neck','Shoulders engaged, not shrugged up to your ears; head neutral','STEP down, never drop; protect the knees']}),
-  E('towel_iso_pull','B','bjj','Towel cable row iso hold',3,20,30,{inc:5, startW:30, timed:true, secStep:5, help:'Breaking posture: pull and HOLD like you’re keeping someone broken down in closed guard', ...V('DyrL0-nb5f8','Towel Seated Row ISO Hold','Sierra Human Performance'),
+  E('towel_pd_hold','B','bjj','Towel lat pulldown hold',3,20,30,{slot:'b_hang', kit:'stack', mach:true, inc:5, startW:40, timed:true, secStep:5, help:'Grip endurance: hold lapel and sleeve grips for a whole round, feet planted', ...V('WGWHKXmrVYo','Towel Lat Pull Down','The Charge Movement'),
+    cues:['Loop two towels (or an old gi) over the pulldown bar and grip them like lapels','Sit, knee pad on your thighs, pull to upper chest and HOLD','Chest up, chin neutral; stop when your grip fails','Weight = stack setting. Time is the hold']}),
+  E('towel_iso_pull','B','bjj','Towel cable row iso hold',3,20,30,{slot:'b_iso', kit:'stack', std:true, mach:true, inc:5, startW:30, timed:true, secStep:5, help:'Breaking posture: pull and HOLD like you’re keeping someone broken down in closed guard', ...V('DyrL0-nb5f8','Towel Seated Row ISO Hold','Sierra Human Performance'),
     cues:['Seated cable row with a towel looped through; grip it like gi lapels','Row to your ribs, then hold with elbows back and chest tall','Neck neutral; don’t lean back to cheat','Weight = stack setting. Time is the hold']}),
-  E('hammer_curl','B','bjj','Hammer curls',3,10,12,{inc:2.5, startW:15, help:'Sleeve grips and arm control: neutral-grip elbow flexion', ...V('zC3nLlEvin4','How To: Dumbbell Hammer Curl','ScottHermanFitness'),
+  E('hammer_curl','B','bjj','Hammer curls',3,10,12,{slot:'b_hammer', kit:'free', std:true, inc:2.5, startW:15, help:'Sleeve grips and arm control: neutral-grip elbow flexion', ...V('zC3nLlEvin4','How To: Dumbbell Hammer Curl','ScottHermanFitness'),
     cues:['Neutral grip (thumbs up), like holding sleeve grips','Elbows still, shoulders down','Controlled, no swinging']}),
-  E('face_pull','B','both','Face pulls',3,15,15,{joint:true, inc:2.5, startW:20, help:'Posture: undoes the hunched guard position and protects the shoulders', ...V('ljgqer1ZpXg','STOP F*cking Up Face Pulls (PROPER FORM!)','ATHLEAN-X™'),
+  E('rope_hammer_curl','B','bjj','Cable rope hammer curls',3,10,12,{slot:'b_hammer', kit:'stack', mach:true, inc:2.5, startW:25, help:'Sleeve grips and arm control: neutral-grip elbow flexion', ...V('1Quc_tOv97I','How To: Rope Hammer Curl','ScottHermanFitness'),
+    cues:['Rope on the low pulley, thumbs up like holding sleeve grips','Elbows still at your sides, shoulders down','Squeeze the rope hard the whole set']}),
+  E('face_pull','B','both','Face pulls',3,15,15,{slot:'b_face', kit:'stack', std:true, mach:true, joint:true, inc:2.5, startW:20, help:'Posture: undoes the hunched guard position and protects the shoulders', ...V('ljgqer1ZpXg','STOP F*cking Up Face Pulls (PROPER FORM!)','ATHLEAN-X™'),
     cues:['Light weight, rope at about face height','Pull toward your eyes; hands finish behind the elbows (rotate out)','Head stays still, chin neutral','Pause and squeeze; slow return']}),
-  E('scap_pull','B','strength','Scapular pull-ups (feet supported) or scap retractions',3,8,10,{joint:true, bw:true, ...V('d0DVd2V0n7A','Fix Your Pull Ups with Scapula Pull Ups | Tim Keeley | Physio REHAB','Physio REHAB'),
+  E('scap_pull','B','strength','Scapular pull-ups (feet supported) or scap retractions',3,8,10,{slot:'b_scap', kit:'bw', std:true, joint:true, bw:true, ...V('d0DVd2V0n7A','Fix Your Pull Ups with Scapula Pull Ups | Tim Keeley | Physio REHAB','Physio REHAB'),
     cues:['Arms straight: move ONLY the shoulder blades (down and back), then relax up','Keep your feet on a box (partial hang), or do it on the lat pulldown machine','Head neutral; don’t tuck or crane your chin',
       'Step down, never drop']}),
-  E('wrist_bucket','B','bjj','Rice bucket or plate wrist work',3,30,45,{joint:true, bw:true, timed:true, secStep:5, help:'Finger and wrist durability for gi grips', ...V('vvximWI1-JM','Hand & Wrist Strength & Durability - Rice or Sand Bucket','Catalyst Athletics'),
+  E('scap_pulldown','B','strength','Scapular pulldowns (lat machine)',3,8,10,{slot:'b_scap', kit:'stack', mach:true, joint:true, inc:5, startW:40, ...V('MrxkONXVqNY','scapular pulldown','DH Kiefer'),
+    cues:['Seated at the pulldown, arms straight','Move ONLY the shoulder blades: pull them down, pause, then let them rise','Head neutral; don’t tuck or crane your chin','Light, smooth reps']}),
+  E('wrist_bucket','B','bjj','Rice bucket or plate wrist work',3,30,45,{slot:'b_wrist', kit:'free', std:true, joint:true, bw:true, timed:true, secStep:5, help:'Finger and wrist durability for gi grips', ...V('vvximWI1-JM','Hand & Wrist Strength & Durability - Rice or Sand Bucket','Catalyst Athletics'),
     cues:['Rice bucket: open/close, twist, and wrist curls inside the rice','No bucket? Pinch-grip plate wrist rotations or a wrist roller, light','Easy pace: joint durability, not max effort','Great for finger and wrist health from gi grips']}),
+  E('finger_ext','B','bjj','Band finger extensions',3,15,20,{slot:'b_wrist', kit:'bw', mach:true, joint:true, bw:true, help:'Finger and wrist durability: balances gi grips so fingers and elbows stay healthy', ...V('x0PFZZVOGpk','Finger Extension with Band','Rehab My Patient'),
+    cues:['Rubber band around your fingers and thumb (seated is fine)','Open the hand wide against the band, pause, close slowly','Easy pace: joint health, not max effort','Do both hands']}),
   /* ================= DAY C · UPPER & ARMS (Strength) / ROTATIONAL CORE & CARRIES (BJJ) ================= */
-  E('sa_cable_row','C','both','Single-arm cable row',4,6,8,{main:true, inc:5, startW:25, side:true, help:'Pulling while resisting the twist, like pulling a sleeve while staying square', ...V('_z5NMUxkxxw','Standing Single Arm Cable Row - The Proper Lift','BPI Sports'),
+  E('sa_cable_row','C','both','Single-arm cable row',4,6,8,{slot:'c_main', kit:'stack', std:true, mach:true, main:true, inc:5, startW:25, side:true, help:'Pulling while resisting the twist, like pulling a sleeve while staying square', ...V('_z5NMUxkxxw','Standing Single Arm Cable Row - The Proper Lift','BPI Sports'),
     cues:['Staggered stance or seated, torso still (resist the twist)','Pull your elbow toward your hip','Head neutral; don’t twist through the neck','Reps are per arm']}),
-  E('neutral_db_press','C','strength','Neutral-grip DB bench press',3,8,10,{inc:5, startW:25, ...V('Oq5MMAbUE2o','Neutral Grip Dumbbell Bench Press | J2FIT | Mike','J2FIT Strength & Conditioning'),
+  E('neutral_db_press','C','strength','Neutral-grip DB bench press',3,8,10,{slot:'c_press', kit:'free', std:true, inc:5, startW:25, ...V('Oq5MMAbUE2o','Neutral Grip Dumbbell Bench Press | J2FIT | Mike','J2FIT Strength & Conditioning'),
     cues:['Palms facing each other, elbows tucked about 30°','Head stays on the bench, chin neutral','Lower to the lower chest, press up without clanking the DBs','Get the DBs up from your thighs; don’t crane your neck to sit up']}),
-  E('rear_delt_fly','C','strength','Reverse pec deck (rear delt fly)',3,12,15,{inc:2.5, startW:30, ...V('rd13vNldjzo','How to use the Rear Delt Fly Machine','Gainzville Training Club'),
+  E('cable_chest_press','C','strength','Standing cable chest press',3,8,10,{slot:'c_press', kit:'stack', mach:true, inc:2.5, startW:20, ...V('sh92B-_2O48','How To Do A Cable Chest Press','PureGym'),
+    cues:['Pulleys at chest height, split stance, both feet flat','Press forward and slightly together, then control back','Ribs down, chin neutral','Weight = stack setting per side']}),
+  E('rear_delt_fly','C','strength','Reverse pec deck (rear delt fly)',3,12,15,{slot:'c_rear', kit:'stack', std:true, mach:true, inc:2.5, startW:30, ...V('rd13vNldjzo','How to use the Rear Delt Fly Machine','Gainzville Training Club'),
     cues:['Chest on the pad, handles at shoulder height','Sweep the arms back with soft elbows; lead with the back of the hand','No shrugging; chin neutral','Pause, then return slowly']}),
-  E('cable_curl','C','strength','Cable curls',3,10,12,{inc:2.5, startW:30, ...V('NFzTWp2qpiE','How To Do Cable Bicep Curls - Full Video Tutorial and Step-by-Step Guide','Fit Father Project - Fitness For Busy Fathers'),
+  E('cable_curl','C','strength','Cable curls',3,10,12,{slot:'c_curl', kit:'stack', std:true, mach:true, inc:2.5, startW:30, ...V('NFzTWp2qpiE','How To Do Cable Bicep Curls - Full Video Tutorial and Step-by-Step Guide','Fit Father Project - Fitness For Busy Fathers'),
     cues:['Stand tall, elbows pinned at your sides','Curl without leaning back','Squeeze at the top, lower in about 2 seconds',NECK]}),
-  E('woodchop','C','bjj','Cable woodchop (high to low, light)',3,10,10,{inc:2.5, startW:15, side:true, help:'Hip escapes and sweeps: rotate from the hips to create space', ...V('jnG8cjO0fMQ','High to Low Cable Chop','ProForm Physical Therapy'),
+  E('woodchop','C','bjj','Cable woodchop (high to low, light)',3,10,10,{slot:'c_chop', kit:'stack', std:true, mach:true, inc:2.5, startW:15, side:true, help:'Hip escapes and sweeps: rotate from the hips to create space', ...V('jnG8cjO0fMQ','High to Low Cable Chop','ProForm Physical Therapy'),
     cues:['Light, smooth, no yanking','Rotate through your hips and mid-back, arms long','Neck moves with your torso; don’t whip your head','Pivot the back foot so the knee doesn’t twist. Reps are per side']}),
-  E('pallof','C','bjj','Pallof press (standing)',3,10,10,{inc:2.5, startW:15, side:true, help:'Base: resist being turned and swept', ...V('otxypVv_0Es','How To Perform The Pallof Press Exercise For Less Lower Back Pain','Dr. Carl Baird'),
+  E('pallof','C','bjj','Pallof press (standing)',3,10,10,{slot:'c_pallof', kit:'stack', std:true, mach:true, inc:2.5, startW:15, side:true, help:'Base: resist being turned and swept', ...V('otxypVv_0Es','How To Perform The Pallof Press Exercise For Less Lower Back Pain','Dr. Carl Baird'),
     cues:['Stand side-on to the band or cable, feet shoulder-width (no kneeling while the knee heals)','Press straight out and resist the twist','Ribs down, neck neutral, breathe','Reps are per side']}),
-  E('standing_lift','C','bjj','Split-stance cable lift (low to high, standing)',3,8,10,{inc:2.5, startW:10, side:true, help:'Posting and framing up from the bottom: diagonal core strength', ...V('XtvgguvEmk0','Split stance cable lift (low to high)','Prepare For Performance'),
+  E('standing_lift','C','bjj','Split-stance cable lift (low to high, standing)',3,8,10,{slot:'c_lift', kit:'stack', std:true, mach:true, inc:2.5, startW:10, side:true, help:'Posting and framing up from the bottom: diagonal core strength', ...V('XtvgguvEmk0','Split stance cable lift (low to high)','Prepare For Performance'),
     cues:['Standing split stance, both feet flat (the standing version of the half-kneeling lift)','Pull the rope from low to high across your body, hips square','Eyes forward; neck moves with your torso','Reps are per side']}),
-  E('suitcase_carry','C','bjj','Suitcase carry or hold',3,20,30,{inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', caution:'Walk only if your knee allows. Otherwise do a standing hold, or a seated grip hold.', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
+  E('suitcase_carry','C','bjj','Suitcase carry or hold',3,20,30,{slot:'c_carry', kit:'free', std:true, inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', caution:'Walk only if your knee allows. Otherwise do a standing hold, or a seated grip hold.', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
     cues:['Stand tall; don’t lean toward the weight','Shoulders level and down, with no shrug (important for the neck)','Short slow steps, or a standing hold; seated hold if your knee is sore','Weight is per hand. Time is per side']}),
-  E('plate_pinch','C','bjj','Plate pinch hold',3,20,30,{inc:2.5, startW:10, timed:true, secStep:5, help:'Pinch grip for pant grips, wrist control, and hanging on to cross-face', ...V('jFTV3DQf3HE','How To Do Plate Pinches','PureGym'),
+  E('cable_suitcase_hold','C','bjj','Single-arm cable iso hold (standing anti-lean)',3,20,30,{slot:'c_carry', kit:'stack', mach:true, inc:5, startW:30, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', ...V('EAwg5mCHOCY','Suitcase Hold | Cable Machine Exercise','ANCORE'),
+    cues:['Stand side-on to a low pulley, handle at your side like a suitcase','Stand tall and don’t lean toward the stack','Shoulders level and down, no shrug (important for the neck)','Weight = stack setting. Time is per side']}),
+  E('plate_pinch','C','bjj','Plate pinch hold',3,20,30,{slot:'c_pinch', kit:'free', std:true, inc:2.5, startW:10, timed:true, secStep:5, help:'Pinch grip for pant grips, wrist control, and hanging on to cross-face', ...V('jFTV3DQf3HE','How To Do Plate Pinches','PureGym'),
     cues:['Pinch smooth sides of plates, arms at your sides','Stand tall, shoulders down, no shrugging','Set it down with control, away from your feet','Weight is per hand']}),
-  E('int_rot','C','both','Cable internal rotation',3,12,15,{joint:true, inc:2.5, startW:5, side:true, help:'Balanced shoulders for framing and underhooks', ...V('0TxfJCE8yqU','Cable Internal Rotation - HASfit Rotator Cuff Exercise Demonstration','HASfit'),
+  E('cable_grip_hold','C','bjj','Towel grip hold on the cable stack',3,20,30,{slot:'c_pinch', kit:'stack', mach:true, inc:5, startW:40, timed:true, secStep:5, help:'Crush and pinch grip for pant grips, wrist control, and hanging on to cross-face', ...V('Ftzz4sa7NeI','Cable Row w/ towel grip','The BJJ Physio'),
+    cues:['Loop a towel through the low pulley; stand tall and hold it at your side with a pinch or crush grip','Arms straight, shoulders down, no shrug','Squeeze like a gi sleeve until the time is up','Weight = stack setting. Time is the hold']}),
+  E('int_rot','C','both','Cable internal rotation',3,12,15,{slot:'c_ir', kit:'stack', std:true, mach:true, joint:true, inc:2.5, startW:5, side:true, help:'Balanced shoulders for framing and underhooks', ...V('0TxfJCE8yqU','Cable Internal Rotation - HASfit Rotator Cuff Exercise Demonstration','HASfit'),
     cues:['Cable at elbow height; towel between elbow and side','Rotate in toward your belly, slow on the way back','Light rotator cuff work',NECK,'Reps are per arm']}),
-  E('pull_aparts','C','strength','Band pull-aparts',3,15,15,{joint:true, bw:true, ...V('3OYSIWaJJk4','The Band Pull-Apart for a Stronger Back','Men’s Health'),
+  E('pull_aparts','C','strength','Band pull-aparts',3,15,15,{slot:'c_apart', kit:'bw', std:true, mach:true, joint:true, bw:true, ...V('3OYSIWaJJk4','The Band Pull-Apart for a Stronger Back','Men’s Health'),
     cues:['Arms at chest height, slight bend in the elbows','Squeeze the shoulder blades back without shrugging','Chin neutral, ribs down, slow return']}),
-  E('neck_iso','C','both','Neck isometrics (surgeon clearance ONLY)',2,10,10,{joint:true, bw:true, timed:true, secStep:0, needs:'neck', help:'Only with surgeon clearance: never a substitute for tapping early', caution:'Hidden until you turn on “Surgeon cleared neck isometrics” in Settings. Gentle pressure only.', ...V('WnKcq1Uh8m4','Isometric strengthening to your neck','Rehab My Patient'),
+  E('neck_iso','C','both','Neck isometrics (surgeon clearance ONLY)',2,10,10,{slot:'c_neck', kit:'bw', std:true, mach:true, joint:true, bw:true, timed:true, secStep:0, needs:'neck', help:'Only with surgeon clearance: never a substitute for tapping early', caution:'Hidden until you turn on “Surgeon cleared neck isometrics” in Settings. Gentle pressure only.', ...V('WnKcq1Uh8m4','Isometric strengthening to your neck','Rehab My Patient'),
     cues:['ONLY with your surgeon’s explicit clearance','Hand against your forehead, then the back and sides of your head: push gently (about 20-30% effort), with NO movement','Breathe; hold about 10s per direction','Stop immediately with any pain, tingling, or arm symptoms']}),
   /* ================= DAY D · LEGS (locked) ================= */
   E('leg_press','D','both','Leg press (limited range)',4,8,8,{main:true, inc:5, startW:40, ...V('FNTd_mxtWmo','Proper Leg Press Form • Weight Lifting Exercises for Osteoporosis','Margaret Martin, Physical Therapist'),
@@ -376,8 +420,10 @@ const DEFAULT_EXERCISES = [
     cues:['Forearms on the ball, from your toes (not your knees for now)','Small slow circles; hips stay still','Neck neutral: look at the ball, don’t crane up']}),
   E('k_hklift','K','both','Split-stance cable lift (standing)',3,8,8,{inc:2.5, startW:10, side:true, help:'Posting & framing up from the bottom: diagonal core strength', ...V('XtvgguvEmk0','Split stance cable lift (low to high)','Prepare For Performance'),
     cues:['Standing split stance, both feet flat: the standing version of the half-kneeling lift','Pull the rope low to high across your body, hips square','Eyes forward; neck moves with your torso','Reps are per side']}),
-  E('k_suitcase','K','both','Suitcase hold',3,20,30,{inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
+  E('k_suitcase','K','both','Suitcase hold',3,20,30,{slot:'k_carry', kit:'free', std:true, inc:5, startW:25, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', ...V('3RKKnZhhelE','How to Perform A Suitcase Carry','Champion Physical Therapy and Performance'),
     cues:['Stand tall, weight at your side, don’t lean','Shoulders level, no shrug','Standing hold (walk only if your knee allows). Time is per side']}),
+  E('k_cable_hold','K','both','Single-arm cable iso hold (anti-lean)',3,20,30,{slot:'k_carry', kit:'stack', mach:true, inc:5, startW:30, timed:true, secStep:5, side:true, help:'Base: stay upright when you’re pulled sideways', ...V('EAwg5mCHOCY','Suitcase Hold | Cable Machine Exercise','ANCORE'),
+    cues:['Stand side-on to a low pulley, handle at your side','Stand tall, don’t lean','Shoulders level, no shrug. Time is per side']}),
   E('k_highplank','K','both','High plank hold (hands on a bench if needed)',3,20,30,{bw:true, timed:true, secStep:5, help:'Sprawl & top pressure; shoulder stability for posting', ...V('EKZfeoVuPbE','The High Plank | Plank Progressions','Dr. Carl Baird'),
     cues:['Hands under shoulders, on your toes (not your knees for now); hands on a bench makes it easier','Squeeze glutes, ribs down, flat back','Neck neutral: look at the floor just ahead of your hands','Breathe; stop if the knee or neck complains']}),
   E('k_slpad','K','both','Single-leg stance on a pad',3,30,30,{bw:true, timed:true, secStep:0, side:true, help:'Base for takedown defense and wrestling', caution:'Only when your knee is cleared. Before that, do seated balance on a stability ball or stand holding a rack.', ...V('UcT6Pk42Jtw','Single Leg Balance on Foam Pad','OrthoIndy'),
@@ -385,7 +431,7 @@ const DEFAULT_EXERCISES = [
 ];
 
 function freshState(){
-  return {v:1, programVersion:PROGRAM_VERSION, settings:{startDate:null, units:'lb', restDefault:90, ptCleared:false, bikeStartRes:2, mode:'bjj', neckIsoCleared:false},
+  return {v:1, programVersion:PROGRAM_VERSION, settings:{startDate:null, units:'lb', restDefault:90, ptCleared:false, bikeStartRes:2, mode:'bjj', neckIsoCleared:false, machinesOnly:true, swaps:{}},
           exercises: JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), sessions:[], bike:[], current:null};
 }
 function load(){
@@ -557,7 +603,20 @@ function nextDay(){
 const curMode = () => (S.settings.mode === 'strength' ? 'strength' : 'bjj');
 function modeOK(e, m){ m = m || curMode(); return !e.mode || e.mode==='both' || e.mode===m; }
 function gateOK(e){ return e.needs!=='neck' || S.settings.neckIsoCleared; }
-function exercisesForDay(d, all, m){ return S.exercises.filter(e => e.day === d && (all || (modeOK(e, m) && gateOK(e)))); }
+/* Slots: one exercise per slot is shown. A swap you picked wins; otherwise the machines-only default (mach) or the regular default (std). */
+function slotOK(e){
+  if(!e.slot) return true;
+  const sw = (S.settings.swaps||{})[e.slot];
+  if(sw && S.exercises.some(x => x.id === sw && x.slot === e.slot)) return e.id === sw;
+  const flag = S.settings.machinesOnly ? 'mach' : 'std';
+  if(!S.exercises.some(x => x.slot === e.slot && x[flag])) return !!(e.std || e.mach);   // default removed: fall back
+  return !!e[flag];
+}
+function slotVariants(slot){ return slot ? S.exercises.filter(x => x.slot === slot) : []; }
+const KIT_LABEL = {stack:'Machine / cable (pin-loaded)', bw:'Bodyweight / band', free:'Dumbbells, plates, barbell, or carrying'};
+const KNEE_TAG = '⚠ Knees: carrying or loading plates';
+const kneeLoad = e => !!(S.settings.machinesOnly && e && e.kit === 'free');
+function exercisesForDay(d, all, m){ return S.exercises.filter(e => e.day === d && (all || (modeOK(e, m) && gateOK(e) && slotOK(e)))); }
 function dayName(d, m){ const x = DAYS[d]; if(!x) return d; return x.name[m || curMode()] || x.name.bjj; }
 function dayDesc(d, m){ const x = DAYS[d]; if(!x) return ''; return (x.desc && (x.desc[m || curMode()] || x.desc.bjj)) || x.bjj || ''; }
 const isLiftDay = d => 'ABCD'.includes(d) && !!d;
@@ -608,6 +667,7 @@ function toast(msg, ms=2200){ const t = document.createElement('div'); t.classNa
 function curWeek(){ return weekOf(todayISO()); }
 const MODE_ICON = {strength:'🏋️', bjj:'🥋'};
 function modeSeg(){ const m = curMode(); return `<div class="seg modeseg" role="tablist" aria-label="Training mode">${Object.entries(MODES).map(([k,v])=>`<button class="${m===k?'on':''} m-${k}" data-a="mode" data-m="${k}" role="tab" aria-selected="${m===k}">${MODE_ICON[k]} ${v}</button>`).join('')}</div>`; }
+function kitTag(){ return S.settings.machinesOnly ? `<span class="modetag m-kit" id="kitTag">🔩 Machines & cables only</span>` : ''; }
 function modeTag(m){ m = m || curMode(); return `<span class="modetag m-${m}" data-mode="${m}">${MODE_ICON[m]} ${m==='strength'?'Strength mode':'BJJ / Grappling mode'}</span>`; }
 function descLine(d, cls, style){ const m = curMode(); return `<div class="${cls||'small'} daydesc" style="${style||''}">${MODE_ICON[m]} ${esc(dayDesc(d))}</div>`; }
 
@@ -661,7 +721,7 @@ function vHome(){
   ${modeSeg()}
   ${weekBanners(w)}
   <div class="hero m-${curMode()}" id="hero">
-    <div style="margin-bottom:10px">${modeTag()}</div>
+    <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px">${modeTag()}${kitTag()}</div>
     <div class="row"><div class="daytag">${heroDay}</div><div class="grow"><div class="small muted">${S.current?'Workout in progress':'Today’s suggested workout'}</div><h2>${esc(dayName(heroDay))}</h2></div></div>
     ${descLine(heroDay, 'small', 'margin-top:10px')}
     <ul>${exs.map(e=>`<li><span>${e.main?'<b class="acc">★</b> ':''}${esc(e.name)}</span><span class="muted" style="white-space:nowrap;padding-left:8px">${suggLine(e,w)}</span></li>`).join('') || '<li class="muted">No exercises for this day yet. Add some in Settings.</li>'}
@@ -721,6 +781,35 @@ function replanCurrent(m){
   const added = plan.filter(ex => !byId.has(ex.id)).length, removed = dayItems.filter(it => !planIds.has(it.exId) && !itemTouched(it)).length;
   c.items = [...next, ...keep, ...others]; c.mode = m;
   return {added, removed, kept: keep.length};
+}
+function setMachinesOnly(on){
+  S.settings.machinesOnly = !!on; S.settings.swaps = {};           // back to that setting's defaults
+  let msg = on ? 'Machines & cables only: on' : 'Machines & cables only: off (regular defaults)';
+  if(S.current && isLiftDay(S.current.day)){ const r = replanCurrent(curMode()); if(r.added || r.removed) msg += ` · workout updated (${r.added} in, ${r.removed} out${r.kept ? `, ${r.kept} logged kept` : ''})`; }
+  save(); render(); toast(msg, 2800);
+}
+/* Swap sheet: every variation of a slot, with equipment and caution tags. */
+function openSwap(exId, i){
+  const ex = exById(exId); if(!ex || !ex.slot) return;
+  const vars = slotVariants(ex.slot); const flag = S.settings.machinesOnly ? 'mach' : 'std';
+  openModal(`<div class="row between"><h2>Swap exercise</h2><button class="mini" data-a="closemodal" aria-label="Close">✕</button></div>
+    <div class="small muted" style="margin-bottom:8px">Every variation for this slot. Each keeps its own progress and history.${S.settings.machinesOnly?' Machines & cables only is on, so the defaults need no carrying or plate loading.':''}</div>
+    <div class="swaplist">${vars.map(v => `<div class="swapopt ${v.id===ex.id?'cur':''}" data-id="${esc(v.id)}"><div class="grow"><b>${esc(v.name)}</b>
+      <div class="tiny muted">${esc(KIT_LABEL[v.kit]||'')}${v.bw?'':' · start '+fmtW(v.startW)+' '+U()} · ${v.sets}×${v.repMin===v.repMax?v.repMax:v.repMin+'-'+v.repMax}${v.timed?'s':''}${v.side?'/side':''}${ytId(v.video)?' · 🎬 video':''}</div>
+      <div class="row wrap" style="gap:4px;margin-top:4px">${v[flag]?'<span class="pill green sm">Default</span>':''}${v.id===ex.id?'<span class="pill sm">✓ In use</span>':''}${kneeLoad(v)?`<span class="pill amber sm kneetag">${KNEE_TAG}</span>`:''}${v.caution?`<span class="pill amber sm">⚠ ${esc(v.caution)}</span>`:''}</div></div>
+      ${v.id===ex.id?'':`<button class="btn sm" data-a="swappick" data-slot="${esc(ex.slot)}" data-id="${esc(v.id)}" data-i="${i==null?'':i}">Use this</button>`}</div>`).join('')}</div>`);
+}
+function pickSwap(slot, id, i){
+  const ex = exById(id); if(!ex) return;
+  S.settings.swaps = S.settings.swaps || {}; S.settings.swaps[slot] = id;
+  let msg = 'Swapped to ' + ex.name;
+  const c = S.current;
+  if(c && i !== '' && i != null && c.items[+i]){
+    const it = c.items[+i];
+    if(itemTouched(it)) msg += ' (from next time; you’ve already logged this one today)';
+    else c.items[+i] = makeItem(ex, c.week);
+  }
+  save(); closeModal(); render(); toast(msg, 2600);
 }
 function setMode(m){
   if(!MODES[m]) return; const was = curMode(); S.settings.mode = m;
@@ -823,7 +912,8 @@ function exCard(it, i){
   const tgt = it.repMin===it.repMax ? it.repMax : it.repMin+'-'+it.repMax;
   const cues = ex.cues || [];
   return `<div class="card ex ${allDone?'done':''}" id="ex-${i}">
-    <div class="row between"><div class="grow"><div class="row wrap" style="gap:6px;margin-bottom:${(it.main||ex.joint||it.calibrating)?6:0}px">${it.main?'<span class="pill green">★ Main lift</span>':''}${it.calibrating?'<span class="pill amber">🎯 Calibrating</span>':''}${ex.joint?'<span class="pill" style="color:#93c5fd;border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.12)">⛨ Joint health</span>':''}</div><p class="title">${esc(it.name)}</p><div class="target">${it.sets.length} × ${tgt}${it.timed?' sec':''}${it.side?' per side':''}${it.bw?(it.timed?' · bodyweight':' · bodyweight/band'):''}${it.inc&&!it.bw?` · +${fmtW(it.inc)} ${U()} steps`:''}</div></div>${allDone?'<span class="pill green">Done</span>':''}</div>
+    <div class="row between"><div class="grow"><div class="row wrap" style="gap:6px;margin-bottom:${(it.main||ex.joint||it.calibrating)?6:0}px">${it.main?'<span class="pill green">★ Main lift</span>':''}${it.calibrating?'<span class="pill amber">🎯 Calibrating</span>':''}${ex.joint?'<span class="pill" style="color:#93c5fd;border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.12)">⛨ Joint health</span>':''}</div><div class="row between" style="gap:8px;align-items:flex-start"><p class="title">${esc(it.name)}</p>${slotVariants(ex.slot).length>1?`<button class="btn sm swapbtn" data-a="swap" data-ex="${esc(it.exId)}" data-i="${i}">⇄ Swap</button>`:''}</div><div class="target">${it.sets.length} × ${tgt}${it.timed?' sec':''}${it.side?' per side':''}${it.bw?(it.timed?' · bodyweight':' · bodyweight/band'):''}${it.inc&&!it.bw?` · +${fmtW(it.inc)} ${U()} steps`:''}</div></div>${allDone?'<span class="pill green">Done</span>':''}</div>
+    ${kneeLoad(ex) ? `<div class="caution kneetag">${KNEE_TAG}</div>` : ''}
     ${ex.caution ? `<div class="caution">⚠ ${esc(ex.caution)}</div>` : ''}
     ${ex.help && curMode()==='bjj' ? `<div class="small matnote">🥋 Mat note: ${esc(ex.help)}</div>` : ''}
     <div class="sugg ${cls}"><b>${head}${isNew?'Starting suggestion':'Suggested'}: ${sugTxt}</b><div class="small muted">${esc(sg.reason)}</div></div>
@@ -1062,6 +1152,7 @@ function vSettings(){
     <div class="kv"><div><b>Start date</b><div class="tiny muted">Week ${curWeek()} today · deload every 6th week</div></div><input type="date" class="txt" style="width:auto" value="${s.startDate||todayISO()}" data-in="startDate"></div>
     <div class="kv"><div><b>Training mode</b><div class="tiny muted">Main lifts, progression, and history carry across both modes</div></div></div>
     ${modeSeg()}
+    <div class="kv"><div><b>Machines & cables only</b><div class="tiny muted">Avoids carrying dumbbells or loading plates while your knees heal.</div></div><label class="toggle"><input type="checkbox" id="machToggle" data-a="machonly" ${s.machinesOnly?'checked':''}><span></span></label></div>
     <div class="kv"><b>Units</b><span class="pill">lb</span></div>
     <div class="kv"><div><b>Default rest timer</b><div class="tiny muted">seconds</div></div><div class="stepper" style="width:150px"><button data-a="restdef" data-d="-15">−</button><input readonly value="${s.restDefault}"><button data-a="restdef" data-d="15">+</button></div></div>
     <div class="kv"><div><b>Bike starting resistance</b><div class="tiny muted">low level on your bike</div></div><div class="stepper" style="width:150px"><button data-a="bikeres" data-d="-1">−</button><input readonly value="${s.bikeStartRes}"><button data-a="bikeres" data-d="1">+</button></div></div>
@@ -1069,9 +1160,9 @@ function vSettings(){
     <div class="kv"><div><b>Surgeon cleared neck isometrics</b><div class="tiny muted">Off by default. Turn this on only if your surgeon explicitly OKs gentle neck isometrics (adds them to Day C).</div></div><label class="toggle"><input type="checkbox" data-a="neckiso" ${s.neckIsoCleared?'checked':''}><span></span></label></div></div>
   <div class="card"><div class="row between"><h3 style="margin:0">Exercises</h3><button class="btn sm primary" data-a="exedit" data-id="">+ Add</button></div>
     <div class="tiny dim" style="margin:6px 0">Tap ✎ to edit the name, sets, reps, increment, video link, or cues, or to swap in a different exercise. Use ↑↓ to reorder.</div>
-    <div class="tiny dim">Showing all exercises. Tags: [S] Strength mode only, [BJJ] BJJ mode only, ⛨ joint health.</div>
+    <div class="tiny dim">Showing all exercises and variations. Tags: [S] Strength mode only, [BJJ] BJJ mode only, ⛨ joint health, [alt] a variation not in use (swap it in from the workout card), ⚠ Knees = carrying or loading plates.</div>
     ${['A','B','C','D','M','K'].map(d=>`<div style="margin-top:10px"><div class="small" style="color:var(--green);font-weight:800">${esc(dayFull(d))}</div>
-      ${exercisesForDay(d, true).map((e,k,arr)=>`<div class="exrow"><div class="nm"><div>${e.mode==='strength'?'<span class="pill" style="padding:1px 6px">S</span> ':e.mode==='bjj'?'<span class="pill green" style="padding:1px 6px">BJJ</span> ':''}${e.joint?'⛨ ':''}<b>${esc(e.name)}</b>${e.needs==='neck'&&!S.settings.neckIsoCleared?' <span class="pill amber" style="padding:1px 6px">off</span>':''}</div><div class="tiny muted">${e.main?'★ main · ':''}${e.sets}×${e.repMin===e.repMax?e.repMax:e.repMin+'-'+e.repMax}${e.timed?'s':''}${e.side?'/side':''} · ${e.bw?'bodyweight/band':'+'+fmtW(e.inc)+' '+U()+(e.startW?' · start '+fmtW(e.startW):'')} · ${ytId(e.video)?'🎬 video':'no video'}</div></div>
+      ${exercisesForDay(d, true).map((e,k,arr)=>`<div class="exrow"><div class="nm"><div>${e.mode==='strength'?'<span class="pill" style="padding:1px 6px">S</span> ':e.mode==='bjj'?'<span class="pill green" style="padding:1px 6px">BJJ</span> ':''}${e.joint?'⛨ ':''}<b>${esc(e.name)}</b>${e.needs==='neck'&&!S.settings.neckIsoCleared?' <span class="pill amber" style="padding:1px 6px">off</span>':''}${e.slot&&!slotOK(e)?' <span class="pill" style="padding:1px 6px">alt</span>':''}${kneeLoad(e)?' <span class="pill amber" style="padding:1px 6px">⚠ Knees</span>':''}</div><div class="tiny muted">${e.main?'★ main · ':''}${e.sets}×${e.repMin===e.repMax?e.repMax:e.repMin+'-'+e.repMax}${e.timed?'s':''}${e.side?'/side':''} · ${e.bw?'bodyweight/band':'+'+fmtW(e.inc)+' '+U()+(e.startW?' · start '+fmtW(e.startW):'')} · ${ytId(e.video)?'🎬 video':'no video'}</div></div>
         <button class="mini" data-a="exmove" data-id="${esc(e.id)}" data-d="-1" ${k===0?'disabled':''}>↑</button><button class="mini" data-a="exmove" data-id="${esc(e.id)}" data-d="1" ${k===arr.length-1?'disabled':''}>↓</button><button class="mini" data-a="exedit" data-id="${esc(e.id)}">✎</button></div>`).join('') || '<div class="tiny dim">None</div>'}</div>`).join('')}
     <div style="height:12px"></div><button class="btn sm" data-a="exdefaults">Restore default program</button></div>
   <div class="card"><h3>Backup</h3><div class="small muted" style="margin-bottom:10px">Your data lives only in this browser on this phone. Export a backup regularly (for example, save it to iCloud Drive or Files).</div>
@@ -1196,6 +1287,9 @@ const A = {
   restskip: () => { if(S.current){ S.current.restEnd=null; save(); } renderRest(); },
   finish: () => finishWorkout(),
   mode: el => setMode(el.dataset.m),
+  machonly: (el, ev) => { ev.preventDefault(); setMachinesOnly(!S.settings.machinesOnly); },
+  swap: el => openSwap(el.dataset.ex, el.dataset.i),
+  swappick: el => pickSwap(el.dataset.slot, el.dataset.id, el.dataset.i),
   bikefinish: () => { const c = S.current; if(!c) return; const min = +$('#bfMin').value, res = +$('#bfRes').value, knee = +$('#bfKnee').value;
     if(!(min > 0)){ toast('Enter minutes'); return; }
     const r = logBikeRide(min, Math.max(1, res||1), knee, 'Finisher after Day '+c.day); c.bikeRideId = r.id; save(); render();
